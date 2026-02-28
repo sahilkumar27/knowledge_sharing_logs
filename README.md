@@ -65,3 +65,38 @@ int maxProfit(vector<int>& prices) {
 **Complexity:**
 - Time: $O(n)$
 - Space: $O(1)$
+
+### 3. Product of Array Except Self
+
+**Problem:** Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i]. The product of any prefix or suffix of nums is guaranteed to fit in a 32-bit integer.
+
+**Approach**
+1. Create an output array ans initialized with 1.
+2. Traverse from left → store prefix product (product of elements before index).
+3. Traverse from right → maintain suffix product (product of elements after index).
+4. Multiply prefix and suffix to get final answer.
+
+**Code**
+```cpp
+vector<int> productExceptSelf(vector<int>& nums) {
+    int n = nums.size();
+    vector<int> ans(n, 1);
+
+    int leftProduct = 1;
+    for(int i = 0; i < n; i++){
+        ans[i] = leftProduct;
+        leftProduct *= nums[i];
+    }
+
+    int rightProduct = 1;
+    for(int i = n - 1; i >= 0; i--){
+        ans[i] *= rightProduct;
+        rightProduct *= nums[i];
+    }
+
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n²)$
+- Space: $O(n)$
