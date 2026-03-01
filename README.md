@@ -99,5 +99,5 @@ vector<int> productExceptSelf(vector<int>& nums) {
 }
 ```
 **Complexity:**
-- Time: $O(n²)$
+- Time: $O(n)$
 - Space: $O(n)$
