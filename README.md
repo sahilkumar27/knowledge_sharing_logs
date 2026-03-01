@@ -428,11 +428,8 @@ public class Main {        // (High level Class)
 ------------------------------------------------------------------------
 
 ## Memory Trick
-
-  Principle   Meaning
-  ----------- ---------------------------
-  SRP         One class → One job
-  OCP         Extend without modifying
-  LSP         Child behaves like parent
-  ISP         Small interfaces
-  DIP         Depend on interface
+ -  SRP         One class → One job
+ - OCP         Extend without modifying
+ - LSP         Child behaves like parent
+ - ISP         Small interfaces
+ - DIP         Depend on interface
