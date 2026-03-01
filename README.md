@@ -1,169 +1,438 @@
-# SOLID Principles — Examples in this Repository
+# SOLID Principles
 
-TL;DR
+**S --- Single Responsibility Principle**\
+**O --- Open Closed Principle**\
+**L --- Liskov Substitution Principle**\
+**I --- Interface Segregation Principle**\
+**D --- Dependency Inversion Principle**
 
-This repository contains small Java examples that demonstrate SOLID design principles: Single Responsibility (SRP), Open/Closed (OCP), Liskov Substitution (LSP), Interface Segregation (ISP) and Dependency Inversion (DIP). The README below explains each principle, shows problem vs correct design (where applicable) and points to the source files under `src/main/java` for full examples.
-
-Table of Contents
-
-- Overview
-- Single Responsibility Principle (SRP)
-- Open/Closed Principle (OCP)
-- Liskov Substitution Principle (LSP)
-  - Violating example (tight coupling)
-  - Correct design (loose coupling)
-- Interface Segregation Principle (ISP)
-  - Violating example
-  - Correct design
-- Dependency Inversion Principle (DIP)
-  - Violating example
-  - Correct design
-- How to run
-- Notes & Contributing
-
----
+------------------------------------------------------------------------
 
 ## Overview
 
-SOLID is an acronym for five object-oriented design principles intended to make software designs more understandable, flexible and maintainable. This repository shows concise Java snippets demonstrating violations and corrected designs for a few of the principles so you can see the difference.
+SOLID is a set of 5 Object-Oriented Design principles that help in
+building maintainable, flexible, scalable and testable systems.
 
-## Single Responsibility Principle (SRP)
+------------------------------------------------------------------------
 
-A class should have only one reason to change — one responsibility. Keep classes focused and small. (This repo contains small classes; treat each example file as a focused responsibility.)
+## Tight Coupling vs Loose Coupling
 
-## Open/Closed Principle (OCP)
+### Tight Coupling
 
-Software entities (classes, modules, functions) should be open for extension but closed for modification. Prefer adding new implementations or behaviors through extension (subclasses, strategies, decorators) rather than editing existing tested code.
-
-## Liskov Substitution Principle (LSP)
-
-A subtype must be substitutable for its base type without changing the correctness of the program. In other words, code using a base type must work correctly when given an instance of a derived type.
-
-### Violating example (tight coupling)
-
-See `src/main/java/com/tight/coupling/TightCouplingExample.java` and `src/main/java/com/tight/coupling/UserDatabase.java` for an example where a base/parent promises functionality (like `refund`) but a concrete child breaks that promise and throws an exception.
-
-Short excerpt (conceptual):
-
-```java
-// Parent declared refund; some children don't support refund and may throw
-class Payment {
-    void pay(int amount) { /*...*/ }
-    void refund(int amount) { /*...*/ }
+``` java
+class Engine {
+    public void start() {
+        System.out.println("Engine Started");
+    }
 }
 
+class Car {
+    Engine engine = new Engine();
+
+    public void drive() {
+        engine.start();
+        System.out.println("Car started");
+    }
+}
+```
+
+### Loose Coupling
+
+``` java
+interface Engine {
+    void start();
+}
+
+class ElectricEngine implements Engine {
+    public void start() {
+        System.out.println("Electric Engine started");
+    }
+}
+
+class Car {
+    private Engine engine;
+
+    public Car(Engine engine) {
+        this.engine = engine;
+    }
+
+    public void drive() {
+        engine.start();
+        System.out.println("Car started");
+    }
+}
+```
+
+------------------------------------------------------------------------
+
+## S --- Single Responsibility Principle
+
+A class should have only one Responsibility.
+
+``` java
+class devEmployee { 
+    int salary () {
+        // Business requirement
+    }
+    String techStack() {
+        // Business requirement
+
+    }
+    String department() {
+        // Business requirement
+
+    }
+}
+```
+
+------------------------------------------------------------------------
+
+## O --- Open Closed Principle
+
+Open for extension, closed for modification. 
+You should be able to add new feature/behaviour without changing the old code.
+
+``` java
+// ❌ Old Design (Violates OCP)
+
+class PaymentProcess {
+
+    void pay(String type) {
+        if (type.equals("creditcard")) {
+            System.out.println("Paid using Credit Card");
+        }
+        else if (type.equals("UPI")) {
+            System.out.println("Paid using UPI");
+        }
+    }
+}
+
+```
+
+```java
+// ✅ Correct Design (Follows OCP)
+
+interface Payment {
+    void pay();
+}
+
+class CreditCard implements Payment {
+    public void pay() {
+        System.out.println("Paid using Credit Card");
+    }
+}
+
+class UPI implements Payment {
+    public void pay() {
+        System.out.println("Paid using UPI");
+    }
+}
+
+class NetBanking implements Payment {
+    public void pay() {
+        System.out.println("Paid using NetBanking");
+    }
+}
+
+class PaymentProcess {
+
+    private Payment payment;
+
+    public PaymentProcess(Payment payment) {
+        this.payment = payment;
+    }
+
+    public void processPayment() {
+        payment.pay();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        Payment payment = new CreditCard();   // You can switch to UPI / NetBanking
+        PaymentProcess process = new PaymentProcess(payment);
+
+        process.processPayment();
+    }
+}
+```
+
+------------------------------------------------------------------------
+
+## L --- Liskov Substitution Principle
+
+A child class must be usable anywhere the parent class is used without breaking the logic or changing expected behaviour.
+
+``` java
+// ❌ Old Design (Violates OCP)
+// Parent class
+class Payment {
+
+    void pay(int amount) {
+        System.out.println("Payment done");
+    }
+
+    void refund(int amount) {
+        System.out.println("Refund processed");
+    }
+}
+
+// Child class 1 — Works fine
+class CreditCardPayment extends Payment {
+    // supports both pay and refund → LSP follows
+}
+
+
+// Child class 2 — Problem
 class CashOnDelivery extends Payment {
+
     @Override
     void refund(int amount) {
         throw new RuntimeException("Refund not supported");
     }
 }
 
-// Upcasting causes runtime failure:
-Payment p = new CashOnDelivery();
-p.refund(1000); // crashes — LSP violated
-```
+// Main
+public class Main {
+    public static void main(String[] args) {
 
-### Correct design (loose coupling)
-
-Split behaviors into smaller abstractions (e.g., `Payment` and `Refundable`) so that concrete classes only implement the capabilities they actually provide.
-
-Relevant files: `src/main/java/com/loose/coupling/LooseCouplingExample.java` and related interfaces/implementations in `src/main/java/com/loose/coupling/` (for example `UserDataProvider`, `UserDatabaseProvider`, `WebServiceDataProvider`, `NewDatabaseProvider`).
-
-Conceptual example:
-
-```java
-interface Payment { void pay(int amount); }
-interface Refundable { void refund(int amount); }
-
-class CreditCardPayment implements Payment, Refundable { /* ... */ }
-class CashOnDelivery implements Payment { /* no refund implementation */ }
-```
-
-This keeps the promises of each abstraction clear and prevents substitutability failures.
-
-## Interface Segregation Principle (ISP)
-
-Clients should not be forced to depend on interfaces they do not use. Provide smaller, focused interfaces rather than large, catch-all interfaces.
-
-### Violating example
-
-```java
-interface IVehicle { void drive(); void fly(); }
-
-class Car implements IVehicle {
-    public void drive() { /* ok */ }
-    public void fly() { throw new UnsupportedOperationException(); }
+        Payment p = new CashOnDelivery();   // Upcasting
+        p.refund(1000);                     // 💥 Runtime crash
+    }
 }
 ```
+- Problem: 
+Parent promised → Every Payment supports refund, but CashOnDelivery breaks that promise → LSP Violated
 
-The `Car` class is forced to implement `fly()` even though it doesn't support flying.
+``` java
+// ✅ Correct Design (Follows LSP) - Now we separate behavior into proper abstractions.
+interface Payment {
+    void pay(int amount);
+}
 
-### Correct design
+interface Refundable {
+    void refund(int amount);
+}
 
-Split interfaces into `IDrive` and `IFly`. Let implementors mix only the capabilities they need.
 
-```java
-interface IDrive { void drive(); }
-interface IFly { void fly(); }
+class CreditCardPayment implements Payment, Refundable {
 
-class Car implements IDrive { public void drive() { /*...*/ } }
-class FlyingCar implements IDrive, IFly { /*...*/ }
-```
+    public void pay(int amount) {
+        System.out.println("Credit Card Payment done");
+    }
 
-In this repository the `src/main/java/com/loose/coupling` examples show how smaller interfaces improve clarity.
+    public void refund(int amount) {
+        System.out.println("Credit Card Refund processed");
+    }
+}
 
-## Dependency Inversion Principle (DIP)
 
-High-level modules should not depend on low-level modules; both should depend on abstractions. Abstractions should not depend on details; details should depend on abstractions.
+class UPI implements Payment, Refundable {
 
-### Violating example
+    public void pay(int amount) {
+        System.out.println("UPI Payment done");
+    }
 
-```java
-class DataAccessLayer {
-    void addCustomer(String name) {
-        // ... add to DB ...
-        FileLogger logger = new FileLogger(); // direct dependency on low-level concrete logger
-        logger.log("Customer added " + name);
+    public void refund(int amount) {
+        System.out.println("UPI Refund processed");
+    }
+}
+
+
+class CashOnDelivery implements Payment {
+
+    public void pay(int amount) {
+        System.out.println("Cash collected on delivery");
+    }
+}
+
+
+
+public class Main {
+    public static void main(String[] args) {
+
+        Payment payment = new CashOnDelivery();
+        payment.pay(1000);     // Works perfectly ✅
+
+        Refundable refundable = new CreditCardPayment();
+        refundable.refund(500);  // Only refundable payments allow refund ✅
     }
 }
 ```
 
-`DataAccessLayer` depends on a concrete `FileLogger` — changing logging requires editing the high-level class.
+------------------------------------------------------------------------
 
-### Correct design
+## I --- Interface Segregation Principle
 
-Introduce an `ILogger` interface and inject the desired logger (constructor or setter). The high-level `DataAccessLayer` depends only on `ILogger`.
+This principle states that a class should not be forced to implement interfaces that it does not use.
+
+``` java
+// ❌ Wrong Design (Violates ISP)
+interface IVehicle {
+    void drive();
+    void fly();
+}
+
+class FlyingCar implements IVehicle {
+
+    public void drive() {
+        System.out.println("Flying car driving");
+    }
+
+    public void fly() {
+        System.out.println("Flying car flying");
+    }
+}
+
+
+class Car implements IVehicle {
+
+    public void drive() {
+        System.out.println("Car driving");
+    }
+
+    public void fly() {
+        // Car cannot fly → forced implementation ❌
+        throw new UnsupportedOperationException("Car cannot fly");
+    }
+}
+```
+- Problem: 
+Car is forced to implement fly() even though it doesn't need it ➡️ Interface Segregation Principle violated
 
 ```java
-interface ILogger { void log(String message); }
-class FileLogger implements ILogger { public void log(String m) { /*...*/ } }
+// ✅ Correct Design (Follows ISP) - Split large interface into smaller specific interfaces
+interface Driveable {
+    void drive();
+}
 
-class DataAccessLayer {
-    private final ILogger logger;
-    public DataAccessLayer(ILogger logger) { this.logger = logger; }
-    void addCustomer(String name) { logger.log("Customer added " + name); }
+interface Flyable {
+    void fly();
+}
+
+
+class Car implements Driveable {
+
+    public void drive() {
+        System.out.println("Car driving");
+    }
+}
+
+
+class FlyingCar implements Driveable, Flyable {
+
+    public void drive() {
+        System.out.println("Flying car driving");
+    }
+
+    public void fly() {
+        System.out.println("Flying car flying");
+    }
+}
+
+
+
+class Airplane implements Flyable {
+
+    public void fly() {
+        System.out.println("Airplane flying");
+    }
 }
 ```
 
-Files demonstrating dependency inversion examples: `src/main/java/com/loose/coupling/UserManager.java` and providers such as `NewDatabaseProvider.java`.
+------------------------------------------------------------------------
 
-## How to run
+## D --- Dependency Inversion Principle
 
-This project uses Maven. From the repository root you can compile the code with:
+DIP states that a high level class must not depend upon low level class.
 
-```bash
-mvn -q -DskipTests package
+``` java
+// ❌ Wrong Design (Violates DIP) - High-level class directly depends on low-level class
+class FileLogger {
+
+    void log(String message) {
+        System.out.println(message);
+    }
+}
+
+
+class DataAccessLayer {   // High Level Class
+
+    void addCustomer(String name) {
+
+        // add customer to database
+
+        FileLogger logger = new FileLogger();   // FileLogger (Low Level Class) - Direct dependency ❌ 
+        logger.log("Customer added " + name);
+    }
+}
+```
+- Problem: 
+High-level module (DataAccessLayer) depends on low-level module (FileLogger)
+➡️ Changing logger type requires modifying business logic → DIP violated
+
+``` java
+// ✅ Correct Design (Follows DIP) - Both depend on abstraction
+interface ILogger {
+    void log(String message);
+}
+
+
+class FileLogger implements ILogger {
+
+    public void log(String message) {
+        System.out.println(message);
+    }
+}
+
+
+class DatabaseLogger implements ILogger {
+
+    public void log(String message) {
+        System.out.println("Log stored in database: " + message);
+    }
+}
+
+
+class DataAccessLayer {
+
+    private ILogger logger;
+
+    // Constructor Dependency Injection
+    public DataAccessLayer(ILogger logger) {
+        this.logger = logger;
+    }
+
+    void addCustomer(String name) {
+
+        // add customer to database
+
+        logger.log("Customer added " + name);
+    }
+}
+
+// This is for the understanding purpose not related to DIP.
+public class Main {        // (High level Class)
+    public static void main(String[] args) {
+
+        ILogger logger = new FileLogger();   // Upcastupcasting - Inheritance - Polymorphism
+        DataAccessLayer data = new DataAccessLayer(logger);  // DataAccessLayer  (Low Level CLass)
+
+        data.addCustomer("Palash");
+    }
+}
+
 ```
 
-You can run specific example classes with `java -cp target/classes com.example.YourExample` or use your IDE to run main classes found in `src/main/java` (for example `car.example.bean.App`).
+------------------------------------------------------------------------
 
-## Notes & Contributing
+## Memory Trick
 
-- The code in this repo is intentionally minimal and focused on demonstrating design principles — it is not production-ready.
-- If you want additional examples (SRP and OCP concrete snippets), open an issue or submit a PR with the expanded examples and unit tests.
-
----
-
-License: feel free to reuse these examples for learning and demos.
-
+  Principle   Meaning
+  ----------- ---------------------------
+  SRP         One class → One job
+  OCP         Extend without modifying
+  LSP         Child behaves like parent
+  ISP         Small interfaces
+  DIP         Depend on interface
