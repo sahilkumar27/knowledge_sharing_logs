@@ -36,6 +36,14 @@ class Car {
 }
 ```
 
+// Explanation:
+
+**Explanation:**
+In this example, the `Car` class directly creates and uses the `Engine` class.
+This means `Car` is tightly connected to `Engine`, making it hard to change the engine type later.
+If you want to use a different engine, you must change the `Car` class itself.
+This is called **tight coupling** and is not flexible.
+
 ### Loose Coupling
 
 ``` java
@@ -63,7 +71,13 @@ class Car {
 }
 ```
 
-------------------------------------------------------------------------
+// Explanation:
+
+**Explanation:**
+Here, `Car` depends on the `Engine` interface, not a specific engine type.
+You can give `Car` any kind of engine (`ElectricEngine`, `PetrolEngine`, etc.) when you create it.
+This is called **loose coupling** and makes your code flexible and easy to extend.
+
 
 ## S --- Single Responsibility Principle
 
@@ -85,7 +99,13 @@ class devEmployee {
 }
 ```
 
-------------------------------------------------------------------------
+// Explanation:
+
+**Explanation:**
+This class does too many things: it handles salary, tech stack, and department.
+If any of these change, you must update this class, which can cause problems.
+According to SRP, each class should do only one job, making code easier to manage and less error-prone.
+
 
 ## O --- Open Closed Principle
 
@@ -108,6 +128,12 @@ class PaymentProcess {
 }
 
 ```
+
+// Explanation:
+
+**Explanation:**
+This code uses if-else to check payment type. If you want to add a new payment method,
+you must change this class. This violates OCP because you keep modifying old code.
 
 ```java
 // ✅ Correct Design (Follows OCP)
@@ -158,7 +184,12 @@ public class Main {
 }
 ```
 
-------------------------------------------------------------------------
+// Explanation:
+
+**Explanation:**
+Now, each payment method is its own class. To add a new payment type, just create a new class.
+The `PaymentProcess` class does not need to change. This follows OCP and makes your code easy to extend.
+
 
 ## L --- Liskov Substitution Principle
 
@@ -202,8 +233,14 @@ public class Main {
     }
 }
 ```
-- Problem: 
 Parent promised → Every Payment supports refund, but CashOnDelivery breaks that promise → LSP Violated
+
+// Explanation:
+
+**Explanation:**
+The parent class says all payments can be refunded, but `CashOnDelivery` cannot.
+If you use `CashOnDelivery` as a `Payment` and call `refund`, your program crashes.
+This breaks LSP because the child class does not behave like the parent.
 
 ``` java
 // ✅ Correct Design (Follows LSP) - Now we separate behavior into proper abstractions.
@@ -261,7 +298,13 @@ public class Main {
 }
 ```
 
-------------------------------------------------------------------------
+// Explanation:
+
+**Explanation:**
+Now, only classes that support refunds implement the `Refundable` interface.
+You cannot call `refund` on `CashOnDelivery`, so there are no surprises or crashes.
+This follows LSP and makes your code safer.
+
 
 ## I --- Interface Segregation Principle
 
@@ -298,8 +341,14 @@ class Car implements IVehicle {
     }
 }
 ```
-- Problem: 
 Car is forced to implement fly() even though it doesn't need it ➡️ Interface Segregation Principle violated
+
+// Explanation:
+
+**Explanation:**
+The `IVehicle` interface forces all vehicles to have both `drive` and `fly` methods.
+Regular cars cannot fly, so they have to add code that throws an error.
+This is confusing and can cause bugs. ISP says only add methods that are needed.
 
 ```java
 // ✅ Correct Design (Follows ISP) - Split large interface into smaller specific interfaces
@@ -341,7 +390,13 @@ class Airplane implements Flyable {
 }
 ```
 
-------------------------------------------------------------------------
+// Explanation:
+
+**Explanation:**
+Now, each class only implements the methods it needs.
+Cars only drive, airplanes only fly, and flying cars do both.
+This makes your code clear and easy to use.
+
 
 ## D --- Dependency Inversion Principle
 
@@ -368,9 +423,15 @@ class DataAccessLayer {   // High Level Class
     }
 }
 ```
-- Problem: 
 High-level module (DataAccessLayer) depends on low-level module (FileLogger)
 ➡️ Changing logger type requires modifying business logic → DIP violated
+
+// Explanation:
+
+**Explanation:**
+`DataAccessLayer` directly creates and uses `FileLogger`.
+If you want to use a different logger (like `DatabaseLogger`), you must change `DataAccessLayer`.
+This is not flexible and violates DIP.
 
 ``` java
 // ✅ Correct Design (Follows DIP) - Both depend on abstraction
@@ -425,7 +486,29 @@ public class Main {        // (High level Class)
 
 ```
 
-------------------------------------------------------------------------
+// Explanation:
+
+**Explanation:**
+Now, `DataAccessLayer` uses the `ILogger` interface, not a specific logger.
+You can give it any logger you want. This makes your code flexible and easy to change.
+
+**Detailed DIP Explanation:**
+The Dependency Inversion Principle (DIP) says that high-level modules (like business logic) should not depend on low-level modules (like utility classes), but both should depend on abstractions (interfaces or abstract classes).
+
+In the good design above:
+* The `DataAccessLayer` (high-level class) does not create or depend directly on a specific logger (low-level class).
+* Instead, it depends on the `ILogger` interface, which is an abstraction.
+* Any class that implements `ILogger` (such as `FileLogger` or `DatabaseLogger`) can be used by `DataAccessLayer`.
+* The logger is provided to `DataAccessLayer` through its constructor (this is called dependency injection).
+
+**Why is this good?**
+- You can easily switch logging strategies (file, database, cloud, etc.) without changing the business logic in `DataAccessLayer`.
+- Your code is more flexible, testable, and maintainable.
+- High-level and low-level modules are decoupled, so changes in one do not force changes in the other.
+
+**Summary:**
+By depending on abstractions and using dependency injection, the good design fully supports DIP and avoids the problems of tight coupling.
+
 
 ## Memory Trick
  -  SRP         One class → One job
