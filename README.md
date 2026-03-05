@@ -101,3 +101,54 @@ vector<int> productExceptSelf(vector<int>& nums) {
 **Complexity:**
 - Time: $O(n)$
 - Space: $O(n)$
+
+---
+
+### 4. Count Number of Subsequence With Sum K
+
+**Problem:** Given an array of integers `nums` and a target sum `K`, count the number of subsequences whose elements sum up to exactly K.
+
+**Approach:**
+1. Use recursive backtracking to explore all possible subsequences.
+2. At each index, we have two choices: include the current element or exclude it.
+3. **Base Cases:**
+   - If target becomes negative, no valid subsequence exists (return 0).
+   - If target becomes 0, we found a valid subsequence (return 1).
+   - If we reach the end of array, check if target is 0.
+4. **Recursive Cases:**
+   - Take the element: recursively count with target reduced by current element.
+   - Don't take: recursively count with same target.
+5. Return the sum of both possibilities.
+
+**Code:**
+```cpp
+int countSubSequence(int ind, vector<int>& nums, int target){
+    // base case
+    if(target < 0){      
+        return 0;
+    }
+    if(target == 0){
+        return 1;
+    }
+    if(ind == nums.size()){
+        return target == 0;
+    }
+    // take the element
+    int take = countSubSequence(ind + 1, nums, target - nums[ind]);
+
+    // not take the element
+    int notTake = countSubSequence(ind + 1, nums, target);
+
+    // return the count of subsequence
+    return take + notTake;
+}
+    
+int numSubseq(vector<int>& nums, int target) {
+    int ind = 0;
+    return countSubSequence(ind, nums, target);
+}
+```
+
+**Complexity:**
+- Time: $O(2^n)$ - exploring all subsequences
+- Space: $O(n)$ - recursion stack depth
