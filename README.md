@@ -97,6 +97,7 @@ vector<int> productExceptSelf(vector<int>& nums) {
 
     return ans;
 }
+```
 
 ### 4. Set Matrix Zeros
 
@@ -154,6 +155,7 @@ Input:                 Output:
 [[1, 1, 1],            [[1, 0, 1],
  [1, 0, 1],    -->      [0, 0, 0],
  [1, 1, 1]]             [1, 0, 1]]
+```
 
 ### 5. Count Number of Subsequence With Sum K
 
