@@ -7,7 +7,7 @@ int countSubSequence(int ind,vector<int>& nums,int target){
             return 1;
         }
         if(ind==nums.size()){
-            return target==0;
+            return 0;
         }
         //take the element
         int take=countSubSequence(ind+1,nums,target-nums[ind]);

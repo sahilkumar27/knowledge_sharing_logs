@@ -100,11 +100,74 @@ vector<int> productExceptSelf(vector<int>& nums) {
 ```
 **Complexity:**
 - Time: $O(n)$
+- Space: $O(n)$ for output array (not counted), $O(1)$ extra space
+
+---
+
+### 4. Set Matrix Zeros
+
+**Problem:** Given an `m x n` matrix, if an element is 0, set its entire row and column to 0. Do it in-place.
+
+**Approach:**
+1. **Create marker arrays:** Initialize two arrays - `row[m]` and `col[n]` - both filled with 1s initially.
+2. **First pass (mark zeros):** Traverse the entire matrix. When you find a zero at position `[i][j]`:
+   - Set `row[i] = 0` to mark that row i needs to be zeroed
+   - Set `col[j] = 0` to mark that column j needs to be zeroed
+3. **Second pass (set zeros):** Traverse the matrix again. For each position `[i][j]`:
+   - If `row[i] == 0` OR `col[j] == 0`, set `matrix[i][j] = 0`
+
+**Why this works:**
+- By using separate marker arrays, we avoid the problem of overwriting values we still need to check
+- We only need to check each cell once in each pass
+- The marker arrays remember the original positions of zeros
+
+**Code:**
+```cpp
+void setZeroes(vector<vector<int>>& matrix) {
+    int rowSize = matrix.size(), colSize = matrix[0].size();
+    
+    // Marker arrays to track which rows and columns need to be zeroed
+    vector<int> row(rowSize, 1);
+    vector<int> col(colSize, 1);
+    
+    // First pass: identify all zeros and mark their rows/columns
+    for(int i = 0; i < rowSize; i++) {
+        for(int j = 0; j < colSize; j++) {
+            if(matrix[i][j] == 0) {
+                row[i] = 0;  // Mark this row
+                col[j] = 0;  // Mark this column
+            }
+        }
+    }
+    
+    // Second pass: set zeros based on markers
+    for(int i = 0; i < rowSize; i++) {
+        for(int j = 0; j < colSize; j++) {
+            if(row[i] == 0 || col[j] == 0) {
+                matrix[i][j] = 0;
+            }
+        }
+    }
+}
+```
+**Complexity:**
+- Time: $O(m \times n)$ - we traverse the matrix twice
+- Space: $O(m + n)$ - for the row and column marker arrays
+
+**Example:**
+```
+Input:                 Output:
+[[1, 1, 1],            [[1, 0, 1],
+ [1, 0, 1],    -->      [0, 0, 0],
+ [1, 1, 1]]             [1, 0, 1]]
+```
+**Complexity:**
+- Time: $O(n)$
 - Space: $O(n)$
 
 ---
 
-### 4. Count Number of Subsequence With Sum K
+### 5. Count Number of Subsequence With Sum K
 
 **Problem:** Given an array of integers `nums` and a target sum `K`, count the number of subsequences whose elements sum up to exactly K.
 
@@ -114,7 +177,7 @@ vector<int> productExceptSelf(vector<int>& nums) {
 3. **Base Cases:**
    - If target becomes negative, no valid subsequence exists (return 0).
    - If target becomes 0, we found a valid subsequence (return 1).
-   - If we reach the end of array, check if target is 0.
+   - If we reach the end of array, directly return 0.
 4. **Recursive Cases:**
    - Take the element: recursively count with target reduced by current element.
    - Don't take: recursively count with same target.
@@ -131,7 +194,7 @@ int countSubSequence(int ind, vector<int>& nums, int target){
         return 1;
     }
     if(ind == nums.size()){
-        return target == 0;
+        return 0;
     }
     // take the element
     int take = countSubSequence(ind + 1, nums, target - nums[ind]);
