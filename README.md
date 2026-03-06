@@ -97,12 +97,6 @@ vector<int> productExceptSelf(vector<int>& nums) {
 
     return ans;
 }
-```
-**Complexity:**
-- Time: $O(n)$
-- Space: $O(n)$ for output array (not counted), $O(1)$ extra space
-
----
 
 ### 4. Set Matrix Zeros
 
@@ -160,12 +154,6 @@ Input:                 Output:
 [[1, 1, 1],            [[1, 0, 1],
  [1, 0, 1],    -->      [0, 0, 0],
  [1, 1, 1]]             [1, 0, 1]]
-```
-**Complexity:**
-- Time: $O(n)$
-- Space: $O(n)$
-
----
 
 ### 5. Count Number of Subsequence With Sum K
 
