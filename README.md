@@ -294,3 +294,108 @@ int maxSubArray(vector<int>& nums) {
 - Space: $O(1)$ - only using two variables
 
 **Key Takeaway:** Kadane's algorithm is elegant because it makes a locally optimal choice at each step (greedy approach), which happens to give us the globally optimal solution!
+
+---
+
+### 7. Pascal's Triangle
+
+**Problem:** Given an integer `numRows`, return the first `numRows` rows of Pascal's Triangle.
+
+In Pascal's Triangle:
+- The first and last element of every row is `1`.
+- Every other element is the **sum of the two elements directly above it** (from the previous row).
+
+**Example:**
+```
+Input: numRows = 5
+Output:
+[
+  [1],
+  [1, 1],
+  [1, 2, 1],
+  [1, 3, 3, 1],
+  [1, 4, 6, 4, 1]
+]
+```
+
+**Visual Explanation:**
+```
+Row 0:        [1]
+Row 1:       [1, 1]
+Row 2:      [1, 2, 1]          ← 2 = 1 + 1 (sum of the two above)
+Row 3:     [1, 3, 3, 1]        ← 3 = 1 + 2, 3 = 2 + 1
+Row 4:    [1, 4, 6, 4, 1]      ← 4 = 1 + 3, 6 = 3 + 3, 4 = 3 + 1
+```
+
+**Approach:**
+1. Start with an empty result array `ans`.
+2. For each row `i` (0-indexed), create a row vector of size `i + 1` initialized with `0`.
+3. **Base case (row 0):** Set `row[0] = 1`.
+4. **All other rows:** For each position `j` in the current row:
+   - Look at the element directly above-left: `ans[i-1][j-1]` (use 0 if `j-1 < 0`)
+   - Look at the element directly above: `ans[i-1][j]` (use 0 if `j` is out of bounds of previous row)
+   - Set `row[j] = prevLeft + prevUp`
+5. Push the completed row into `ans`.
+
+**How each element is computed:**
+
+For position `j` in row `i`, we look at row `i-1`:
+```
+prevLeft = ans[i-1][j-1]   → element to the upper-left  (0 if j == 0)
+prevUp   = ans[i-1][j]     → element directly above      (0 if j == previous row's size)
+row[j]   = prevLeft + prevUp
+```
+
+This naturally handles the boundary: the first and last elements of each row will always be `1` because one of the two lookups falls out of bounds (returns 0) and the other returns `1`.
+
+**Step-by-step walkthrough for numRows = 4:**
+```
+i=0: row = [1]                        (base case)
+     ans = [[1]]
+
+i=1: j=0: prevLeft = 0 (j-1 < 0), prevUp = ans[0][0] = 1  → row[0] = 1
+     j=1: prevLeft = ans[0][0] = 1,  prevUp = 0 (out of bounds) → row[1] = 1
+     ans = [[1], [1,1]]
+
+i=2: j=0: prevLeft = 0, prevUp = ans[1][0] = 1  → row[0] = 1
+     j=1: prevLeft = ans[1][0] = 1, prevUp = ans[1][1] = 1 → row[1] = 2
+     j=2: prevLeft = ans[1][1] = 1, prevUp = 0 (out of bounds) → row[2] = 1
+     ans = [[1], [1,1], [1,2,1]]
+
+i=3: j=0: 0 + 1 = 1
+     j=1: 1 + 2 = 3
+     j=2: 2 + 1 = 3
+     j=3: 1 + 0 = 1
+     ans = [[1], [1,1], [1,2,1], [1,3,3,1]]
+```
+
+**Code:**
+```cpp
+vector<vector<int>> generate(int numRows) {
+    vector<vector<int>> ans;
+    int i = 0;
+    while (i < numRows) {
+        vector<int> row(i + 1, 0);  // row i has i+1 elements, all init to 0
+        if (i == 0) {
+            row[0] = 1;             // base case: first row is just [1]
+        } else {
+            for (int j = 0; j < row.size(); j++) {
+                // upper-left neighbor: 0 if j is at the left boundary
+                int prevLeft = (j - 1 >= 0) ? ans[i - 1][j - 1] : 0;
+                // directly above neighbor: 0 if j is at the right boundary
+                int prevUp = (j == (int)ans[i - 1].size()) ? 0 : ans[i - 1][j];
+                row[j] = prevLeft + prevUp;
+            }
+        }
+        ans.push_back(row);
+        i++;
+    }
+    return ans;
+}
+```
+
+**Complexity:**
+- Time: $O(n^2)$ — we fill every cell of the triangle; row `i` has `i+1` elements, so total cells = $1 + 2 + ... + n = \frac{n(n+1)}{2}$
+- Space: $O(n^2)$ — we store all rows in the result (output space)
+
+**Key Takeaway:** Pascal's Triangle is a great example of building a solution **row by row using previously computed results**. Each new row only depends on the immediately preceding row, making this an intuitive introduction to dynamic programming thinking.
