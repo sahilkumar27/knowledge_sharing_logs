@@ -205,3 +205,92 @@ int numSubseq(vector<int>& nums, int target) {
 **Complexity:**
 - Time: $O(2^n)$ - exploring all subsequences
 - Space: $O(n)$ - recursion stack depth
+
+---
+
+### 6. Maximum Subarray (Kadane's Algorithm)
+
+**Problem:** Given an integer array `nums`, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.
+
+**Example:**
+```
+Input: nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+Output: 6
+Explanation: The subarray [4, -1, 2, 1] has the largest sum = 6
+```
+
+**Approach (Kadane's Algorithm):**
+
+The key insight is: at each position, we have two choices:
+1. **Extend** the previous subarray by including the current element
+2. **Start fresh** from the current element
+
+We choose whichever gives us a larger sum!
+
+**Step-by-step walkthrough:**
+```
+Array: [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+
+i=0: currentMax = -2, maxSum = -2
+     (Starting with first element)
+
+i=1: currentMax = max(1, -2+1) = max(1, -1) = 1
+     maxSum = max(-2, 1) = 1
+     (Better to start fresh from 1 than extend -2)
+
+i=2: currentMax = max(-3, 1-3) = max(-3, -2) = -2
+     maxSum = 1
+     (Extending is less bad than starting from -3)
+
+i=3: currentMax = max(4, -2+4) = max(4, 2) = 4
+     maxSum = max(1, 4) = 4
+     (Better to start fresh from 4)
+
+i=4: currentMax = max(-1, 4-1) = max(-1, 3) = 3
+     maxSum = 4
+     (Extending keeps sum positive)
+
+i=5: currentMax = max(2, 3+2) = 5
+     maxSum = max(4, 5) = 5
+
+i=6: currentMax = max(1, 5+1) = 6
+     maxSum = max(5, 6) = 6
+
+i=7: currentMax = max(-5, 6-5) = 1
+     maxSum = 6
+     (Even though we hit -5, extending keeps sum positive)
+
+i=8: currentMax = max(4, 1+4) = 5
+     maxSum = 6
+     (Final answer is 6)
+```
+
+**Why this works:**
+- `currentMax` tracks the best sum we can get ending at current position
+- `maxSum` tracks the overall best sum we've seen
+- If `currentMax` becomes negative, it's better to start fresh
+- This avoids checking all possible subarrays (which would be $O(n^2)$ or $O(n^3)$)
+
+**Code:**
+```cpp
+int maxSubArray(vector<int>& nums) {
+    int maxSum = nums[0];
+    int currentMax = nums[0];
+    
+    for(int i = 1; i < nums.size(); i++) {
+        // Either extend the previous subarray or start fresh
+        currentMax = max(nums[i], currentMax + nums[i]);
+        
+        // Update the overall maximum
+        maxSum = max(maxSum, currentMax);
+    }
+    
+    return maxSum;
+}
+```
+
+**Complexity:**
+- Time: $O(n)$ - single pass through the array
+- Space: $O(1)$ - only using two variables
+
+**Key Takeaway:** Kadane's algorithm is elegant because it makes a locally optimal choice at each step (greedy approach), which happens to give us the globally optimal solution!
