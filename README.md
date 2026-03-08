@@ -906,3 +906,195 @@ Final ans (sorted) = ["DDRDRR", "DRDDRR"]
 - Space: $O(n^2)$ — the `visited` matrix takes $O(n^2)$ space, and the recursion stack can go at most $n^2$ levels deep in the worst case.
 
 **Key Takeaway:** Rat in a Maze is the classic example of **backtracking** — try a path, and if it doesn't work, undo your last step and try something else. The `visited` matrix is the heart of this: mark before you go in, unmark when you come out. This ensures every path is explored independently without interference.
+---
+
+
+
+### 11. Print All Subsequences with Sum = K
+
+## Problem Statement
+
+Given an array of integers `nums` and a target sum `k`, print **all subsequences** whose elements add up to exactly `k`.
+
+**Example:**
+```
+Input:  nums = {1, 2, 1}, k = 2
+Output:
+1 1
+2
+```
+
+---
+
+## What is a Subsequence?
+
+A subsequence is a subset of elements that **maintain their relative order** from the original array. Elements do not need to be contiguous.
+
+For `{1, 2, 1}`:
+- All subsequences: `{}`, `{1}`, `{2}`, `{1}`, `{1,2}`, `{1,1}`, `{2,1}`, `{1,2,1}`
+- Subsequences with sum = 2: `{1,1}`, `{2}` ✅
+
+---
+
+## Approach — Recursion + Backtracking
+
+### Core Idea
+
+At **every index**, we make a binary choice:
+1. **Take** the current element → subtract it from remaining sum `k`
+2. **Don't take** the current element → move forward with same `k`
+
+We explore all possible combinations via recursion and **backtrack** after each choice.
+
+### Recursion Tree (for `{1, 2, 1}`, k = 2)
+
+```
+printSubsequence(k=2, ind=0, ans=[])
+├── TAKE nums[0]=1 → printSubsequence(k=1, ind=1, ans=[1])
+│   ├── TAKE nums[1]=2 → printSubsequence(k=-1, ind=2, ans=[1,2])
+│   │   └── ❌ k < 0 → return
+│   └── SKIP nums[1] → printSubsequence(k=1, ind=2, ans=[1])
+│       ├── TAKE nums[2]=1 → printSubsequence(k=0, ind=3, ans=[1,1])
+│       │   └── ✅ k==0 → print "1 1"
+│       └── SKIP nums[2] → printSubsequence(k=1, ind=3, ans=[1])
+│           └── ❌ ind==size → return
+└── SKIP nums[0]=1 → printSubsequence(k=2, ind=1, ans=[])
+    ├── TAKE nums[1]=2 → printSubsequence(k=0, ind=2, ans=[2])
+    │   └── ✅ k==0 → print "2"
+    └── SKIP nums[1] → printSubsequence(k=2, ind=2, ans=[])
+        ├── TAKE nums[2]=1 → printSubsequence(k=1, ind=3, ans=[1])
+        │   └── ❌ ind==size → return
+        └── SKIP nums[2] → printSubsequence(k=2, ind=3, ans=[])
+            └── ❌ ind==size → return
+```
+
+---
+
+## Code
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+void printSubsequence(vector<int>& nums, int k, int ind, vector<int>& ans)
+{
+    // Base Case: if required sum achieved
+    if (k == 0)
+    {
+        for (int i = 0; i < ans.size(); i++)
+        {
+            cout << ans[i] << " ";
+        }
+        cout << endl;
+        return;
+    }
+
+    // Base Case: reached end or sum becomes negative
+    if (ind == nums.size() || k < 0)
+        return;
+
+    // Take the current element
+    ans.push_back(nums[ind]);
+    printSubsequence(nums, k - nums[ind], ind + 1, ans);
+
+    // Backtrack
+    ans.pop_back();
+
+    // Do not take the element
+    printSubsequence(nums, k, ind + 1, ans);
+}
+
+int main()
+{
+    vector<int> nums = {1, 2, 1};
+    int k = 2;
+
+    vector<int> ans;
+
+    printSubsequence(nums, k, 0, ans);
+
+    return 0;
+}
+```
+
+---
+
+## Step-by-Step Explanation
+
+| Step | Action | `ind` | `k` (remaining) | `ans` |
+|------|--------|-------|-----------------|-------|
+| 1 | Start | 0 | 2 | `[]` |
+| 2 | Take 1 | 1 | 1 | `[1]` |
+| 3 | Skip 2 | 2 | 1 | `[1]` |
+| 4 | Take 1 | 3 | 0 | `[1,1]` |
+| 5 | **k==0 → PRINT** | - | - | `1 1` |
+| 6 | Backtrack to ind=1 | 1 | 2 | `[]` |
+| 7 | Take 2 | 2 | 0 | `[2]` |
+| 8 | **k==0 → PRINT** | - | - | `2` |
+
+---
+
+## Base Cases — Why They Matter
+
+```cpp
+if (k == 0)          // ✅ Found valid subsequence → print it
+if (ind == nums.size() || k < 0)  // ❌ Exhausted array OR overshot sum → stop
+```
+
+| Condition | Meaning | Action |
+|-----------|---------|--------|
+| `k == 0` | Remaining sum hit zero | Print current `ans` |
+| `ind == nums.size()` | Traversed entire array | Stop exploring |
+| `k < 0` | Sum exceeded target | Prune this branch |
+
+> ⚠️ The `k < 0` check **only works for non-negative arrays**. If the array has negatives, remove this check.
+
+---
+
+## Complexity Analysis
+
+| | Value |
+|--|--|
+| **Time** | O(2ⁿ) — every element has 2 choices (take/skip) |
+| **Space** | O(n) — recursion stack depth + `ans` vector |
+
+---
+
+## Key Concepts to Remember
+
+```
+✅ Take element  → push to ans, reduce k, move to ind+1
+✅ Skip element  → keep ans same, keep k same, move to ind+1
+✅ Backtrack     → pop_back() after the "take" recursive call
+✅ Pruning       → k < 0 cuts unnecessary branches early
+```
+
+---
+
+## Common Variations
+
+| Variant | Change Needed |
+|---------|--------------|
+| **Count** subsequences with sum k | Return `int`, add `1` instead of printing |
+| **Any one** subsequence with sum k | Return `bool`, stop after first found |
+| **Array has negatives** | Remove `k < 0` base case |
+| **With duplicates (unique subsets)** | Sort array + skip duplicate branches |
+
+---
+
+## Quick Revision Cheatsheet
+
+```
+Problem   : Print all subsequences with sum = k
+Pattern   : Recursion + Backtracking (Pick/Not-Pick)
+At each step:
+  ├─ PICK   → ans.push_back(), recurse with k-nums[ind], ind+1
+  └─ NO PICK → recurse with k, ind+1
+  (after PICK branch) → ans.pop_back()  ← BACKTRACK
+
+Base Cases:
+  k == 0             → print ans ✅
+  ind == n || k < 0  → return ❌
+
+Time: O(2ⁿ)  |  Space: O(n)
+```
