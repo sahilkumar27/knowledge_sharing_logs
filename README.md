@@ -687,3 +687,222 @@ Sorted:    [0, 1, 2, 3, 3, 4, 5, 6]
 - Space: $O(n)$ — the recursion stack goes at most `n` levels deep (one per element)
 
 **Key Takeaway:** The **Take / Not Take** pattern is the fundamental building block of subset-based recursion. Every element gets two chances at each recursive call — be part of the subset or not. This cleanly generates all $2^n$ possible subsets without any overlap or missed case.
+---
+
+### 10. Rat in a Maze
+
+**Problem:** Given an `n x n` binary maze where `1` means the cell is open and `0` means it is blocked, find all paths a rat can take from the **top-left corner `(0,0)`** to the **bottom-right corner `(n-1, n-1)`**. The rat can move in four directions: **Right (R), Left (L), Up (U), Down (D)**. Return all valid paths in lexicographic order.
+
+**Example:**
+```
+Input:
+maze = [[1, 0, 0, 0],
+        [1, 1, 0, 1],
+        [1, 1, 0, 0],
+        [0, 1, 1, 1]]
+
+Output: ["DDRDRR", "DRDDRR"]
+```
+
+---
+
+**Approach (Recursion + Backtracking):**
+
+At every cell, the rat tries all 4 directions. If a move is valid (in bounds, not blocked, not already visited), the rat steps into that cell and keeps exploring. If a path leads to a dead end, the rat **backtracks** — it unmarks the cell as visited and tries a different direction.
+
+**Key ideas:**
+- A `visited` matrix ensures the rat doesn't revisit a cell in the same path (avoids infinite loops).
+- After returning from a recursive call, we **unmark** the cell (`visited[row][col] = 0`) so other paths can use it.
+- The path string is built character by character as we move — no need to undo it since strings are passed by value.
+
+**Steps:**
+1. Start at `(0, 0)` with an empty path string.
+2. At each cell, check all 4 directions in order: R → L → U → D.
+3. For each direction, recurse into the neighboring cell with the direction character appended to path.
+4. **Base cases:**
+   - Out of bounds → return
+   - Cell is `0` (blocked) or already visited → return
+   - Reached `(n-1, n-1)` → push path to `ans` and return
+5. Mark cell visited before recursing, unmark after (backtracking).
+
+---
+
+**Code:**
+```cpp
+void storePath(int row, int col, string path, vector<vector<int>> &maze,
+               vector<vector<int>> &visited, vector<string> &ans, int n) {
+
+    // Base case: out of bounds
+    if (row < 0 || col < 0 || row >= n || col >= n) return;
+
+    // Base case: cell is blocked or already visited in this path
+    if (maze[row][col] == 0 || visited[row][col]) return;
+
+    // Base case: reached destination → valid path found
+    if (row == n - 1 && col == n - 1) {
+        ans.push_back(path);
+        return;
+    }
+
+    // Mark current cell as visited
+    visited[row][col] = 1;
+
+    storePath(row, col + 1, path + 'R', maze, visited, ans, n);  // Move Right
+    storePath(row, col - 1, path + 'L', maze, visited, ans, n);  // Move Left
+    storePath(row - 1, col, path + 'U', maze, visited, ans, n);  // Move Up
+    storePath(row + 1, col, path + 'D', maze, visited, ans, n);  // Move Down
+
+    // Unmark current cell (backtrack) so other paths can use it
+    visited[row][col] = 0;
+}
+
+vector<string> ratInMaze(vector<vector<int>>& maze) {
+    int n = maze.size();
+    vector<vector<int>> visited(n, vector<int>(n, 0));
+    vector<string> ans;
+    string path = "";
+    storePath(0, 0, path, maze, visited, ans, n);
+    return ans;
+}
+```
+
+---
+
+**Understanding the Code — Key Points:**
+
+| Part | What it does |
+|------|-------------|
+| `visited[row][col] = 1` | Marks the cell before diving deeper — prevents revisiting in same path |
+| `visited[row][col] = 0` | **Backtracking step** — unmarks after returning so other paths can use this cell |
+| `path + 'R'` | Passes a new string copy down — no need to undo since original `path` is unchanged |
+| Order: R → L → U → D | This fixed order ensures results come out in lexicographic order |
+| `maze[row][col] == 0` | Cell is a wall — dead end, don't proceed |
+| `row == n-1 && col == n-1` | Destination reached — store the path |
+
+---
+
+**Maze Visualization for the Example:**
+
+```
+     Col: 0   1   2   3
+Row 0: [  1   0   0   0  ]   ← Start at (0,0)
+Row 1: [  1   1   0   1  ]
+Row 2: [  1   1   0   0  ]
+Row 3: [  0   1   1   1  ]   ← End at (3,3)
+
+1 = open cell   0 = blocked cell
+```
+
+**Path 1: "DDRDRR"**
+```
+(0,0) →D (1,0) →D (2,0) →R (2,1) →D (3,1) →R (3,2) →R (3,3) ✅
+```
+
+**Path 2: "DRDDRR"**
+```
+(0,0) →D (1,0) →R (1,1) →D (2,1) →D (3,1) →R (3,2) →R (3,3) ✅
+```
+
+---
+
+**Recursion Tree (simplified for key branches):**
+
+Only open cells shown. Pruned branches are marked with ✗.
+
+```
+storePath(0,0, "")
+│
+├── R → (0,1) ✗  [maze=0, blocked]
+├── L → (0,-1) ✗ [out of bounds]
+├── U → (-1,0) ✗ [out of bounds]
+└── D → (1,0, "D")
+    │
+    ├── R → (1,1, "DR")
+    │   ├── R → (1,2) ✗ [maze=0]
+    │   ├── L → (1,0) ✗ [visited]
+    │   ├── U → (0,1) ✗ [maze=0]
+    │   └── D → (2,1, "DRD")
+    │       ├── R → (2,2) ✗ [maze=0]
+    │       ├── L → (2,0, "DRDL") → dead end (all neighbors blocked/visited)
+    │       ├── U → (1,1) ✗ [visited]
+    │       └── D → (3,1, "DRDD")
+    │           ├── R → (3,2, "DRDDR")
+    │           │   ├── R → (3,3, "DRDDRR") ✅ push "DRDDRR"
+    │           │   └── ... other directions pruned
+    │           ├── L → (3,0) ✗ [maze=0]
+    │           ├── U → (2,1) ✗ [visited]
+    │           └── D → (4,1) ✗ [out of bounds]
+    │
+    ├── L → (1,-1) ✗ [out of bounds]
+    ├── U → (0,0) ✗  [visited]
+    └── D → (2,0, "DD")
+        ├── R → (2,1, "DDR")
+        │   ├── R → (2,2) ✗ [maze=0]
+        │   ├── L → (2,0) ✗ [visited]
+        │   ├── U → (1,1) ... → dead end
+        │   └── D → (3,1, "DDRD")
+        │       ├── R → (3,2, "DDRDR")
+        │       │   ├── R → (3,3, "DDRDRR") ✅ push "DDRDRR"
+        │       │   └── ... other directions pruned
+        │       └── ...
+        ├── L → (2,-1) ✗ [out of bounds]
+        ├── U → (1,0) ✗  [visited]
+        └── D → (3,0) ✗  [maze=0]
+```
+
+**Paths found in order of discovery:** `["DRDDRR", "DDRDRR"]`  
+**After sort (lexicographic):** `["DDRDRR", "DRDDRR"]` ✅
+
+---
+
+**Dry Run (tracing the first successful path "DDRDRR"):**
+
+```
+storePath(0,0, "")
+  visited[0][0] = 1
+  → Try R: storePath(0,1,"R")   → maze[0][1]=0 ✗ return
+  → Try L: storePath(0,-1,"L") → out of bounds ✗ return
+  → Try U: storePath(-1,0,"U") → out of bounds ✗ return
+  → Try D: storePath(1,0,"D")
+      visited[1][0] = 1
+      → Try R: storePath(1,1,"DR")
+          visited[1][1] = 1
+          → Try D: storePath(2,1,"DRD")
+              visited[2][1] = 1
+              → Try D: storePath(3,1,"DRDD")
+                  visited[3][1] = 1
+                  → Try R: storePath(3,2,"DRDDR")
+                      visited[3][2] = 1
+                      → Try R: storePath(3,3,"DRDDRR")
+                          row==n-1 && col==n-1 → push "DRDDRR" ✅ return
+                      visited[3][2] = 0  ← backtrack
+                  visited[3][1] = 0  ← backtrack
+              visited[2][1] = 0  ← backtrack
+          visited[1][1] = 0  ← backtrack
+      → Try D: storePath(2,0,"DD")
+          visited[2][0] = 1
+          → Try R: storePath(2,1,"DDR")
+              visited[2][1] = 1
+              → Try D: storePath(3,1,"DDRD")
+                  visited[3][1] = 1
+                  → Try R: storePath(3,2,"DDRDR")
+                      visited[3][2] = 1
+                      → Try R: storePath(3,3,"DDRDRR")
+                          row==n-1 && col==n-1 → push "DDRDRR" ✅ return
+                      visited[3][2] = 0  ← backtrack
+                  visited[3][1] = 0  ← backtrack
+              visited[2][1] = 0  ← backtrack
+          visited[2][0] = 0  ← backtrack
+      visited[1][0] = 0  ← backtrack
+  visited[0][0] = 0  ← backtrack
+
+Final ans (sorted) = ["DDRDRR", "DRDDRR"]
+```
+
+---
+
+**Complexity:**
+- Time: $O(4^{n^2})$ — at each of the $n^2$ cells, we can try up to 4 directions. In the worst case (fully open maze), this leads to $4^{n^2}$ recursive calls.
+- Space: $O(n^2)$ — the `visited` matrix takes $O(n^2)$ space, and the recursion stack can go at most $n^2$ levels deep in the worst case.
+
+**Key Takeaway:** Rat in a Maze is the classic example of **backtracking** — try a path, and if it doesn't work, undo your last step and try something else. The `visited` matrix is the heart of this: mark before you go in, unmark when you come out. This ensures every path is explored independently without interference.
