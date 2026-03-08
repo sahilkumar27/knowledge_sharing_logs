@@ -539,7 +539,8 @@ Final ans = ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]
 - Time: $O(n \times 4^n)$ — in the worst case (digits like `7` or `9` with 4 letters), each digit branches into 4 calls. With `n` digits, we get up to $4^n$ leaf nodes, and each combination takes $O(n)$ to build.
 - Space: $O(n)$ — recursion stack goes `n` levels deep (one per digit)
 
-**Key Takeaway:** This is a classic **recursive backtracking** problem. The trick is to think of each digit as a level in the recursion tree. At each level, we try all possible letters for that digit and recurse deeper. The base case naturally collects all complete combinations at the leaves of the tree.
+**Key Takeaway:**
+- This is a classic **recursive backtracking** problem. The trick is to think of each digit as a level in the recursion tree. At each level, we try all possible letters for that digit and recurse deeper. The base case naturally collects all complete combinations at the leaves of the tree.
 ---
 
 ### 9. Subset Sums
@@ -686,7 +687,8 @@ Sorted:    [0, 1, 2, 3, 3, 4, 5, 6]
 - Time: $O(2^n)$ — there are $2^n$ subsets for an array of size `n`, and we visit each exactly once. Sorting the result adds $O(2^n \log 2^n)$ which simplifies to $O(n \cdot 2^n)$.
 - Space: $O(n)$ — the recursion stack goes at most `n` levels deep (one per element)
 
-**Key Takeaway:** The **Take / Not Take** pattern is the fundamental building block of subset-based recursion. Every element gets two chances at each recursive call — be part of the subset or not. This cleanly generates all $2^n$ possible subsets without any overlap or missed case.
+**Key Takeaway:**
+- The **Take / Not Take** pattern is the fundamental building block of subset-based recursion. Every element gets two chances at each recursive call — be part of the subset or not. This cleanly generates all $2^n$ possible subsets without any overlap or missed case.
 ---
 
 ### 10. Rat in a Maze
@@ -905,7 +907,8 @@ Final ans (sorted) = ["DDRDRR", "DRDDRR"]
 - Time: $O(4^{n^2})$ — at each of the $n^2$ cells, we can try up to 4 directions. In the worst case (fully open maze), this leads to $4^{n^2}$ recursive calls.
 - Space: $O(n^2)$ — the `visited` matrix takes $O(n^2)$ space, and the recursion stack can go at most $n^2$ levels deep in the worst case.
 
-**Key Takeaway:** Rat in a Maze is the classic example of **backtracking** — try a path, and if it doesn't work, undo your last step and try something else. The `visited` matrix is the heart of this: mark before you go in, unmark when you come out. This ensures every path is explored independently without interference.
+**Key Takeaway:**
+- Rat in a Maze is the classic example of **backtracking** — try a path, and if it doesn't work, undo your last step and try something else. The `visited` matrix is the heart of this: mark before you go in, unmark when you come out. This ensures every path is explored independently without interference.
 ---
 
 
