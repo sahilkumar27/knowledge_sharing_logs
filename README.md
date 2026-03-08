@@ -540,3 +540,150 @@ Final ans = ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]
 - Space: $O(n)$ — recursion stack goes `n` levels deep (one per digit)
 
 **Key Takeaway:** This is a classic **recursive backtracking** problem. The trick is to think of each digit as a level in the recursion tree. At each level, we try all possible letters for that digit and recurse deeper. The base case naturally collects all complete combinations at the leaves of the tree.
+---
+
+### 9. Subset Sums
+
+**Problem:** Given an array `arr`, find the sum of all possible subsets and return them in sorted order.
+
+**Example:**
+```
+Input:  arr = [2, 3, 1]
+Output: [0, 1, 2, 3, 3, 4, 5, 6]
+
+Explanation:
+Subset []        → sum = 0
+Subset [1]       → sum = 1
+Subset [2]       → sum = 2
+Subset [2,1]     → sum = 3
+Subset [3]       → sum = 3
+Subset [3,1]     → sum = 4
+Subset [2,3]     → sum = 5
+Subset [2,3,1]   → sum = 6
+```
+
+---
+
+**Approach (Recursion — Take / Not Take):**
+
+At every index, we face a binary choice:
+- **Take** the current element → add it to the running sum and move to the next index
+- **Not Take** the current element → keep the sum as-is and move to the next index
+
+By exploring both choices at every index, we cover every possible subset. When we reach the end of the array (base case), the accumulated `sum` represents one complete subset sum — we store it.
+
+**Steps:**
+1. Start with `ind = 0` and `sum = 0`.
+2. At each index, make two recursive calls — one adding `arr[ind]` to sum, one not adding.
+3. When `ind == arr.size()`, push the current `sum` into `ans`.
+4. After all calls return, sort `ans` and return it.
+
+---
+
+**Code:**
+```cpp
+void helper(int ind, int sum, vector<int> &arr, vector<int> &ans) {
+    // Base case: processed all elements → store the accumulated sum
+    if (ind == arr.size()) {
+        ans.push_back(sum);
+        return;
+    }
+
+    // Take: include arr[ind] in the current subset
+    helper(ind + 1, sum + arr[ind], arr, ans);
+
+    // Not Take: exclude arr[ind] from the current subset
+    helper(ind + 1, sum, arr, ans);
+}
+
+vector<int> subsetSums(vector<int>& arr) {
+    int sum = 0;
+    vector<int> ans;
+    helper(0, sum, arr, ans);
+    sort(ans.begin(), ans.end());
+    return ans;
+}
+```
+
+---
+
+**Understanding the Code — Key Points:**
+
+| Part | What it does |
+|------|-------------|
+| `ind` | Tracks which element we're currently deciding to take or skip |
+| `sum` | Running total of the current subset being built |
+| `ind == arr.size()` | All elements decided → one complete subset sum is ready |
+| `sum + arr[ind]` | Passes an updated sum to the "take" branch without modifying the original |
+| `sum` (unchanged) | Passes the same sum to the "not take" branch |
+| `sort(ans...)` | Final sort since subsets are explored in no particular order |
+
+---
+
+**Recursion Tree for `arr = [2, 3, 1]`:**
+
+Each node shows `(ind, sum)`. Left branch = **Take**, Right branch = **Not Take**.
+
+```
+                              (0, sum=0)
+                           /              \
+               Take arr[0]=2            Not Take arr[0]=2
+                   /                           \
+           (1, sum=2)                       (1, sum=0)
+           /        \                       /         \
+    Take arr[1]=3  Not Take           Take arr[1]=3  Not Take
+         /               \                /                \
+  (2, sum=5)        (2, sum=2)      (2, sum=3)         (2, sum=0)
+   /       \          /     \        /       \           /       \
+Take      Skip     Take    Skip   Take      Skip      Take      Skip
+arr[2]=1  arr[2]  arr[2]=1 arr[2] arr[2]=1  arr[2]  arr[2]=1   arr[2]
+   |         |       |       |       |          |       |           |
+(3,sum=6) (3,sum=5)(3,sum=3)(3,sum=2)(3,sum=4)(3,sum=3)(3,sum=1)(3,sum=0)
+   ✅        ✅      ✅       ✅       ✅         ✅       ✅         ✅
+push 6    push 5  push 3  push 2  push 4    push 3  push 1    push 0
+```
+
+**All values collected (unsorted):** `[6, 5, 3, 2, 4, 3, 1, 0]`  
+**After sort:** `[0, 1, 2, 3, 3, 4, 5, 6]` ✅
+
+---
+
+**Dry Run for `arr = [2, 3, 1]`:**
+
+```
+helper(0, sum=0)
+├── TAKE arr[0]=2 → helper(1, sum=2)
+│   ├── TAKE arr[1]=3 → helper(2, sum=5)
+│   │   ├── TAKE arr[2]=1 → helper(3, sum=6)
+│   │   │   └── ind==3 → push 6 ✅
+│   │   └── SKIP arr[2]   → helper(3, sum=5)
+│   │       └── ind==3 → push 5 ✅
+│   └── SKIP arr[1]   → helper(2, sum=2)
+│       ├── TAKE arr[2]=1 → helper(3, sum=3)
+│       │   └── ind==3 → push 3 ✅
+│       └── SKIP arr[2]   → helper(3, sum=2)
+│           └── ind==3 → push 2 ✅
+│
+└── SKIP arr[0]   → helper(1, sum=0)
+    ├── TAKE arr[1]=3 → helper(2, sum=3)
+    │   ├── TAKE arr[2]=1 → helper(3, sum=4)
+    │   │   └── ind==3 → push 4 ✅
+    │   └── SKIP arr[2]   → helper(3, sum=3)
+    │       └── ind==3 → push 3 ✅
+    └── SKIP arr[1]   → helper(2, sum=0)
+        ├── TAKE arr[2]=1 → helper(3, sum=1)
+        │   └── ind==3 → push 1 ✅
+        └── SKIP arr[2]   → helper(3, sum=0)
+            └── ind==3 → push 0 ✅
+
+Collected: [6, 5, 3, 2, 4, 3, 1, 0]
+Sorted:    [0, 1, 2, 3, 3, 4, 5, 6]
+```
+
+---
+
+**Complexity:**
+- Time: $O(2^n)$ — there are $2^n$ subsets for an array of size `n`, and we visit each exactly once. Sorting the result adds $O(2^n \log 2^n)$ which simplifies to $O(n \cdot 2^n)$.
+- Space: $O(n)$ — the recursion stack goes at most `n` levels deep (one per element)
+
+**Key Takeaway:** The **Take / Not Take** pattern is the fundamental building block of subset-based recursion. Every element gets two chances at each recursive call — be part of the subset or not. This cleanly generates all $2^n$ possible subsets without any overlap or missed case.
