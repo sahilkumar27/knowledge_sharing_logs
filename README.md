@@ -399,3 +399,144 @@ vector<vector<int>> generate(int numRows) {
 - Space: $O(n^2)$ — we store all rows in the result (output space)
 
 **Key Takeaway:** Pascal's Triangle is a great example of building a solution **row by row using previously computed results**. Each new row only depends on the immediately preceding row, making this an intuitive introduction to dynamic programming thinking.
+
+---
+
+### 8. Letter Combinations of a Phone Number
+
+**Problem:** Given a string containing digits from `2-9`, return all possible letter combinations that the number could represent — just like the letters on a telephone keypad.
+
+**Phone Keypad Mapping:**
+```
+2 → abc     3 → def
+4 → ghi     5 → jkl     6 → mno
+7 → pqrs    8 → tuv     9 → wxyz
+```
+
+**Example:**
+```
+Input:  digits = "23"
+Output: ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]
+```
+
+---
+
+**Approach (Recursion / Backtracking):**
+
+The idea is to process one digit at a time. For the current digit, try appending **each of its mapped letters** to the string built so far, and then recurse for the next digit.
+
+Think of it like a tree where:
+- Each **level** of the tree corresponds to one digit
+- Each **branch** from a node corresponds to one possible letter for that digit
+- A **leaf node** (when we've processed all digits) gives us one complete combination
+
+**Step-by-step Approach:**
+1. Create a `map` array where index `i` stores the letters for digit `i` (indices 0 and 1 are empty since `0` and `1` have no letters).
+2. Call the recursive helper starting at index `0` with an empty `letter` string.
+3. **Base case:** If `ind == digits.length()`, we've used every digit — push `letter` into `ans` and return.
+4. **Recursive case:** Get the letters for `digits[ind]`. Loop through each letter, append it to `letter`, and recurse with `ind + 1`.
+
+---
+
+**Code:**
+```cpp
+void helper(int ind, string &digits, string letter, vector<string> &map, vector<string> &ans) {
+    // Base case: all digits have been processed → valid combination found
+    if (ind == digits.length()) {
+        ans.push_back(letter);
+        return;
+    }
+
+    // Get the letters mapped to the current digit
+    string temp = map[digits[ind] - '0'];
+
+    // Try each letter for the current digit
+    for (int i = 0; i < temp.length(); i++) {
+        helper(ind + 1, digits, letter + temp[i], map, ans);
+    }
+}
+
+vector<string> letterCombinations(string digits) {
+    // Map index → letters (indices 0 and 1 are unused)
+    vector<string> map = {"", "", "abc", "def", "ghi", "jkl", "mno", "pqrs", "tuv", "wxyz"};
+    string letter = "";
+    vector<string> ans;
+    helper(0, digits, letter, map, ans);
+    return ans;
+}
+```
+
+---
+
+**Understanding the Code — Line by Line:**
+
+| Part | What it does |
+|------|-------------|
+| `digits[ind] - '0'` | Converts char digit (e.g. `'2'`) to integer index `2` to look up the map |
+| `map[digits[ind]-'0']` | Gets the letters for the current digit e.g. `"abc"` for digit `2` |
+| `letter + temp[i]` | Builds the combination string character by character (does NOT modify original, passes a copy) |
+| `helper(ind+1, ...)` | Moves to the next digit after fixing the current character |
+| Base case `ind == digits.length()` | All digits are consumed → one full combination is ready |
+
+---
+
+**Recursion Tree for Input `"23"`:**
+
+```
+                        helper(ind=0, letter="")
+                        digits[0]='2' → "abc"
+               /                  |                  \
+     letter+='a'             letter+='b'           letter+='c'
+  helper(ind=1,"a")       helper(ind=1,"b")      helper(ind=1,"c")
+  digits[1]='3'→"def"    digits[1]='3'→"def"   digits[1]='3'→"def"
+    /     |     \           /     |     \          /     |     \
+  "ad"  "ae"  "af"       "bd"  "be"  "bf"      "cd"  "ce"  "cf"
+  ✅    ✅    ✅          ✅    ✅    ✅         ✅    ✅    ✅
+```
+
+- **Level 0 → Level 1:** We fix the letter for digit `2` (`a`, `b`, or `c`)
+- **Level 1 → Level 2 (leaf):** We fix the letter for digit `3` (`d`, `e`, or `f`)
+- At every leaf, `ind == digits.length()` → combination is complete and pushed to `ans`
+
+**Result:** `["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]`
+
+---
+
+**Dry Run for `digits = "23"`:**
+
+```
+map[2] = "abc",  map[3] = "def"
+
+Call: helper(0, "23", "")
+  └─ temp = "abc"
+  ├─ i=0 → append 'a' → helper(1, "23", "a")
+  │         └─ temp = "def"
+  │         ├─ i=0 → append 'd' → helper(2, "23", "ad")
+  │         │         └─ ind==2 == length → push "ad" ✅
+  │         ├─ i=1 → append 'e' → helper(2, "23", "ae")
+  │         │         └─ ind==2 == length → push "ae" ✅
+  │         └─ i=2 → append 'f' → helper(2, "23", "af")
+  │                   └─ ind==2 == length → push "af" ✅
+  │
+  ├─ i=1 → append 'b' → helper(1, "23", "b")
+  │         └─ temp = "def"
+  │         ├─ i=0 → append 'd' → helper(2, "23", "bd") → push "bd" ✅
+  │         ├─ i=1 → append 'e' → helper(2, "23", "be") → push "be" ✅
+  │         └─ i=2 → append 'f' → helper(2, "23", "bf") → push "bf" ✅
+  │
+  └─ i=2 → append 'c' → helper(1, "23", "c")
+            └─ temp = "def"
+            ├─ i=0 → append 'd' → helper(2, "23", "cd") → push "cd" ✅
+            ├─ i=1 → append 'e' → helper(2, "23", "ce") → push "ce" ✅
+            └─ i=2 → append 'f' → helper(2, "23", "cf") → push "cf" ✅
+
+Final ans = ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]
+```
+
+---
+
+**Complexity:**
+- Time: $O(n \times 4^n)$ — in the worst case (digits like `7` or `9` with 4 letters), each digit branches into 4 calls. With `n` digits, we get up to $4^n$ leaf nodes, and each combination takes $O(n)$ to build.
+- Space: $O(n)$ — recursion stack goes `n` levels deep (one per digit)
+
+**Key Takeaway:** This is a classic **recursive backtracking** problem. The trick is to think of each digit as a level in the recursion tree. At each level, we try all possible letters for that digit and recurse deeper. The base case naturally collects all complete combinations at the leaves of the tree.
