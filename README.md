@@ -1101,3 +1101,173 @@ Base Cases:
 
 Time: O(2ⁿ)  |  Space: O(n)
 ```
+---
+
+### 12. Check If Any Subsequence with Sum = K Exists
+
+## Problem Statement
+
+Given an array of integers `arr` of size `n` and a target integer `k`, determine whether **any subsequence** of the array exists whose elements sum to exactly `k`. Return `true` if such a subsequence exists, otherwise return `false`.
+
+**Example:**
+```
+Input:  arr = {1, 2, 3}, n = 3, k = 5
+Output: true
+Explanation: The subsequence {2, 3} has sum = 5 ✅
+
+Input:  arr = {1, 2, 3}, n = 3, k = 7
+Output: false
+Explanation: No subsequence sums to 7 ❌
+```
+
+---
+
+## What is a Subsequence?
+
+A subsequence is a subset of elements that **maintain their relative order** from the original array. Elements do not need to be contiguous.
+
+For `{1, 2, 3}`:
+- All subsequences: `{}`, `{1}`, `{2}`, `{3}`, `{1,2}`, `{1,3}`, `{2,3}`, `{1,2,3}`
+- Subsequences with sum = 5: `{2, 3}` ✅
+
+---
+
+## Approach — Recursion (Pick / Not-Pick)
+
+### Core Idea
+
+At **every index**, we make a binary choice:
+1. **Take** the current element → add it to the running `sum`
+2. **Don't take** the current element → keep `sum` unchanged
+
+We recurse through all combinations and check if any of them hit exactly `k` by the time we've processed every element.
+
+### Base Case
+
+When `index == n` (we've gone past the last element), we check: is `sum == k`?
+- **Yes** → a valid subsequence was found → return `true`
+- **No**  → this path failed → return `false`
+
+### Short-circuit Evaluation
+
+Because we use `take || notTake`, as soon as one branch returns `true`, the other branch is **not evaluated** — giving us an early exit.
+
+---
+
+## Recursion Tree (for `arr = {1, 2, 3}`, k = 5)
+
+```
+checkIfExists(index=0, sum=0)
+├── TAKE 1 → checkIfExists(index=1, sum=1)
+│   ├── TAKE 2 → checkIfExists(index=2, sum=3)
+│   │   ├── TAKE 3 → checkIfExists(index=3, sum=6)
+│   │   │   └── sum(6) != k(5) → ❌ false
+│   │   └── SKIP 3 → checkIfExists(index=3, sum=3)
+│   │       └── sum(3) != k(5) → ❌ false
+│   └── SKIP 2 → checkIfExists(index=2, sum=1)
+│       ├── TAKE 3 → checkIfExists(index=3, sum=4)
+│       │   └── sum(4) != k(5) → ❌ false
+│       └── SKIP 3 → checkIfExists(index=3, sum=1)
+│           └── sum(1) != k(5) → ❌ false
+└── SKIP 1 → checkIfExists(index=1, sum=0)
+    ├── TAKE 2 → checkIfExists(index=2, sum=2)
+    │   ├── TAKE 3 → checkIfExists(index=3, sum=5)
+    │   │   └── sum(5) == k(5) → ✅ true  ← propagates up immediately
+    │   └── ...short-circuited
+    └── ...short-circuited
+```
+
+---
+
+## Code
+
+```cpp
+bool checkIfExists(int index, int n, vector<int>& arr, int k, int sum) {
+    // Base case: processed all elements → did we hit the target?
+    if (index == n) {
+        return sum == k;
+    }
+
+    // Take the current element: add arr[index] to running sum
+    bool take = checkIfExists(index + 1, n, arr, k, sum + arr[index]);
+
+    // Don't take the current element: sum stays the same
+    bool notTake = checkIfExists(index + 1, n, arr, k, sum);
+
+    // Return true if either choice leads to a valid subsequence
+    return take || notTake;
+}
+
+bool checkSubsequenceSum(int n, vector<int>& arr, int k) {
+    int sum = 0;
+    return checkIfExists(0, n, arr, k, sum);  // Start from index 0, sum = 0
+}
+```
+
+---
+
+## Step-by-Step Walkthrough
+
+| Step | `index` | `sum` | Action | Result |
+|------|---------|-------|--------|--------|
+| 1 | 0 | 0 | Start | — |
+| 2 | 1 | 0 | Skip `arr[0]=1` | — |
+| 3 | 2 | 2 | Take `arr[1]=2` | — |
+| 4 | 3 | 5 | Take `arr[2]=3` | — |
+| 5 | 3 | 5 | `index==n`, `sum==k` | ✅ `true` |
+
+---
+
+## How It Differs from "Count" and "Print" Variants
+
+| Problem Variant | Return Type | What Changes |
+|----------------|-------------|--------------|
+| **Check if exists** (this problem) | `bool` | Return `true` on first valid path found |
+| **Count** subsequences with sum k | `int` | Return `1` instead of `true`, sum both branches |
+| **Print all** subsequences with sum k | `void` | Maintain a current path vector, print when base case hits |
+
+---
+
+## Base Case — Why It Works
+
+```cpp
+if (index == n) {
+    return sum == k;
+}
+```
+
+We only check the sum **after** deciding on every element — this is cleaner and avoids early termination issues with negative numbers.
+
+> ✅ **This approach works even if the array contains negative numbers**, because we don't prune early based on whether `sum > k`.
+
+---
+
+## Complexity Analysis
+
+| | Value |
+|--|--|
+| **Time** | O(2ⁿ) — each element has 2 choices (take / skip) |
+| **Space** | O(n) — maximum recursion stack depth |
+
+> In practice, the `||` short-circuit means we often exit **much earlier** than the worst case once a valid subsequence is found.
+
+---
+
+## Quick Revision Cheatsheet
+
+```
+Problem   : Check if any subsequence sums to k
+Pattern   : Recursion (Pick / Not-Pick)
+
+At each index:
+  ├─ TAKE   → recurse with sum + arr[index], index + 1
+  └─ NO TAKE → recurse with sum, index + 1
+
+Base Case:
+  index == n → return (sum == k)
+
+Short-circuit:
+  return take || notTake   ← stops as soon as true is found
+
+Time: O(2ⁿ)  |  Space: O(n)
+```
