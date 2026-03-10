@@ -1271,3 +1271,276 @@ Short-circuit:
 
 Time: O(2ⁿ)  |  Space: O(n)
 ```
+---
+
+
+### 13 Rotate Matrix 90° Clockwise
+
+
+### **Problem Statement:**
+Rotate an **N × N matrix** by **90° clockwise**.
+
+&nbsp;
+
+**Input**
+```
+1 2 3
+4 5 6
+7 8 9
+```
+
+**Output**
+```
+7 4 1
+8 5 2
+9 6 3
+```
+
+---
+
+## **Approach 1 — Brute Force (Extra Matrix)**
+
+&nbsp;
+
+> 🔑 **Key Idea:** Create a new matrix and place each element at its rotated position using a formula.
+
+&nbsp;
+
+**Mapping Rule**
+```
+matrix[i][j]  →  result[j][n-1-i]
+```
+
+**Steps**
+- Create a new matrix `result[n][n]`
+- Traverse original matrix
+- Place elements using mapping rule
+
+&nbsp;
+
+| Complexity | Value  |
+|------------|--------|
+| Time       | O(N²)  |
+| Space      | O(N²)  |
+
+&nbsp;
+
+### **Brute Force Code (C++)**
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+
+    vector<vector<int>> matrix = {
+        {1,2,3},
+        {4,5,6},
+        {7,8,9}
+    };
+
+    int n = matrix.size();
+    vector<vector<int>> result(n, vector<int>(n));   // here the space complexity becomes n^2
+
+    for(int i = 0; i < n; i++)
+        for(int j = 0; j < n; j++)
+            result[j][n-1-i] = matrix[i][j];
+
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++)
+            cout << result[i][j] << " ";
+        cout << endl;
+    }
+}
+```
+
+---
+
+## **Formula Deep Dive — `result[j][n-1-i] = matrix[i][j]`**
+
+&nbsp;
+
+> 📌 This is the **core line** of the brute force approach. Understanding this is key.
+
+&nbsp;
+
+**What it means:**
+- Take element from position `(i, j)` in original matrix
+- Place it at position `(j, n-1-i)` in result matrix
+
+```
+Original Position  →  New Position
+    (i , j)        →   (j , n-1-i)
+```
+
+&nbsp;
+
+**Why `n-1-i`?**
+- Matrix index starts from `0`, so last index = `n-1`
+- When rotating clockwise → row becomes **reversed column**
+- That reversal is captured by `n-1-i`
+
+&nbsp;
+
+### **How to Derive the Formula (Interview Trick)**
+
+Track where elements go after rotation:
+
+```
+Original → Rotated
+(0,0)    → (0,2)
+(0,1)    → (1,2)
+(0,2)    → (2,2)
+(1,0)    → (0,1)
+(2,0)    → (0,0)
+```
+
+**Pattern observed:**
+```
+new row = j
+new col = n-1-i
+```
+
+> ✅ **Memory Trick:** Column becomes row. Row becomes reverse column.
+
+---
+
+## **Dry Run — Every Iteration (n=3)**
+
+&nbsp;
+
+> 🔍 Matrix used: `{{1,2,3},{4,5,6},{7,8,9}}`, n = 3
+
+&nbsp;
+
+| Iteration | i | j | Element | Formula Applied | New Position | Result Matrix State |
+|-----------|---|---|---------|-----------------|--------------|---------------------|
+| 1 | 0 | 0 | 1 | result[0][3-1-0] | result[0][2] = 1 | `_ _ 1 / _ _ _ / _ _ _` |
+| 2 | 0 | 1 | 2 | result[1][3-1-0] | result[1][2] = 2 | `_ _ 1 / _ _ 2 / _ _ _` |
+| 3 | 0 | 2 | 3 | result[2][3-1-0] | result[2][2] = 3 | `_ _ 1 / _ _ 2 / _ _ 3` |
+| 4 | 1 | 0 | 4 | result[0][3-1-1] | result[0][1] = 4 | `_ 4 1 / _ _ 2 / _ _ 3` |
+| 5 | 1 | 1 | 5 | result[1][3-1-1] | result[1][1] = 5 | `_ 4 1 / _ 5 2 / _ _ 3` |
+| 6 | 1 | 2 | 6 | result[2][3-1-1] | result[2][1] = 6 | `_ 4 1 / _ 5 2 / _ 6 3` |
+| 7 | 2 | 0 | 7 | result[0][3-1-2] | result[0][0] = 7 | `7 4 1 / _ 5 2 / _ 6 3` |
+| 8 | 2 | 1 | 8 | result[1][3-1-2] | result[1][0] = 8 | `7 4 1 / 8 5 2 / _ 6 3` |
+| 9 | 2 | 2 | 9 | result[2][3-1-2] | result[2][0] = 9 | `7 4 1 / 8 5 2 / 9 6 3` |
+
+&nbsp;
+
+**Final Rotated Matrix:**
+```
+7 4 1
+8 5 2
+9 6 3
+```
+
+---
+
+## **Approach 2 — Optimal (In-place, O(1) Space)**
+
+&nbsp;
+
+> 🔑 **Key Idea:** No extra matrix needed. Do it in **2 simple steps**.
+
+&nbsp;
+
+**Step 1 — Transpose the matrix**
+```
+Swap matrix[i][j] ↔ matrix[j][i]
+
+1 2 3         1 4 7
+4 5 6   →     2 5 8
+7 8 9         3 6 9
+```
+
+**Step 2 — Reverse each row**
+```
+1 4 7   →   7 4 1
+2 5 8   →   8 5 2
+3 6 9   →   9 6 3
+```
+
+&nbsp;
+
+### **Optimal Code (C++)**
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+
+    vector<vector<int>> matrix = {
+        {1,2,3},
+        {4,5,6},
+        {7,8,9}
+    };
+
+    int n = matrix.size();
+
+    // Step 1: Transpose (Interchange)
+    for(int i = 0; i < n; i++)
+        for(int j = i+1; j < n; j++)
+            swap(matrix[i][j], matrix[j][i]);
+
+    // Step 2: Reverse each row
+    for(int i = 0; i < n; i++)
+        reverse(matrix[i].begin(), matrix[i].end());
+
+    // Print
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++)
+            cout << matrix[i][j] << " ";
+        cout << endl;
+    }
+}
+```
+
+---
+
+## **Complexity Comparison**
+
+&nbsp;
+
+| Approach    | Time  | Space |
+|-------------|-------|-------|
+| Brute Force | O(N²) | O(N²) |
+| Optimal     | O(N²) | O(1)  |
+
+---
+
+## **All Rotation Types — Cheatsheet**
+
+&nbsp;
+
+| Rotation           | Formula / Steps                          |
+|--------------------|------------------------------------------|
+| 90° Clockwise      | `(i,j) → (j, n-1-i)` OR Transpose + Reverse rows |
+| 90° Anti-clockwise | `(i,j) → (n-1-j, i)` OR Transpose + Reverse columns |
+| 180°               | Reverse rows + Reverse columns           |
+
+---
+
+## **Quick Revision Cheatsheet**
+
+```
+Problem   : Rotate N×N matrix 90° clockwise
+
+Brute Force:
+  result[j][n-1-i] = matrix[i][j]
+  Time: O(N²)  |  Space: O(N²)
+
+Optimal (In-place):
+  Step 1 → Transpose  (swap i,j with j,i)
+  Step 2 → Reverse each row
+  Time: O(N²)  |  Space: O(1)
+
+Formula Memory Trick:
+  column  →  becomes new row
+  row     →  becomes reversed column
+  (i, j)  →  (j, n-1-i)
+```
+---
