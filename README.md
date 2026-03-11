@@ -1544,3 +1544,145 @@ Formula Memory Trick:
   (i, j)  →  (j, n-1-i)
 ```
 ---
+
+### 14. Reverse a Linked List
+
+**Problem:** Given the `head` of a singly linked list, reverse the list and return the new head.
+
+**Example:**
+```
+Input:  1 → 2 → 3 → 4 → 5 → NULL
+Output: 5 → 4 → 3 → 2 → 1 → NULL
+```
+
+---
+
+## **Approach 1 — Iterative (O(1) Space)**
+
+> 🔑 **Key Idea:** Use three pointers — `prev`, `curr`, and `temp` — to reverse each link one step at a time as you walk through the list.
+
+**How it works:**
+- `prev` starts as `NULL` (the new tail's next will be NULL).
+- `curr` starts at `head` and moves forward each iteration.
+- Before reversing a link, save `curr->next` in `temp` so we don't lose the rest of the list.
+- Then point `curr->next` backwards to `prev`, advance `prev` to `curr`, and advance `curr` to `temp`.
+- Once `curr` is NULL, `prev` is the new head.
+
+**Step-by-step dry run:**
+```
+Initial:   prev=NULL   curr=1→2→3→NULL
+
+Step 1:  temp=2,    1→NULL,  prev=1,  curr=2
+Step 2:  temp=3,    2→1,     prev=2,  curr=3
+Step 3:  temp=NULL, 3→2,     prev=3,  curr=NULL
+
+Loop ends. Return prev = 3→2→1→NULL  ✅
+```
+
+**Code:**
+```cpp
+// Iterative approach: Time complexity=O(n), Space complexity=O(1)
+ListNode* reverseList(ListNode* head) {
+    ListNode *curr = head, *temp = curr, *prev = NULL;
+    while (curr) {
+        temp = curr->next;   // save next node
+        curr->next = prev;   // reverse the link
+        prev = curr;         // move prev forward
+        curr = temp;         // move curr forward
+    }
+    return prev;             // prev is the new head
+}
+```
+
+**Complexity:**
+- Time: $O(n)$ — single pass through the list
+- Space: $O(1)$ — only three pointers used
+
+---
+
+## **Approach 2 — Recursive (O(n) Space)**
+
+> 🔑 **Key Idea:** Recursively reverse the tail of the list, then fix the link between the current node and its successor.
+
+**How it works:**
+1. Recurse all the way to the last node — that becomes `revHead` (the new head).
+2. On the way back, for each node:
+   - `head->next->next = head` makes the next node point back to the current node.
+   - `head->next = NULL` removes the original forward link (to avoid a cycle).
+3. Bubble `revHead` up unchanged until it's returned as the final result.
+
+**Step-by-step dry run:**
+```
+List: 1 → 2 → 3 → NULL
+
+recurse(1) calls recurse(2) calls recurse(3)
+  → Base case: 3->next == NULL, return 3  (revHead = 3)
+
+Back at node 2:
+  2->next->next = 2   →   3→2
+  2->next = NULL      →   2→NULL
+  Return revHead = 3
+
+Back at node 1:
+  1->next->next = 1   →   2→1
+  1->next = NULL      →   1→NULL
+  Return revHead = 3
+
+Final list: 3 → 2 → 1 → NULL  ✅
+```
+
+**Code:**
+```cpp
+// Recursive approach: Time complexity=O(n), Space complexity=O(n)
+ListNode* reverseList(ListNode* head) {
+    if (head == NULL || head->next == NULL) {
+        return head;                           // base case: empty or single node
+    }
+    ListNode* revHead = reverseList(head->next);  // reverse the rest
+    head->next->next = head;                   // make next node point back to current
+    head->next = NULL;                         // remove original forward link
+    return revHead;                            // new head bubbles up unchanged
+}
+```
+
+**Complexity:**
+- Time: $O(n)$ — visits every node once
+- Space: $O(n)$ — recursion call stack grows to depth n
+
+---
+
+## **Comparison**
+
+| Approach   | Time  | Space | Notes                                               |
+|------------|-------|-------|-----------------------------------------------------|
+| Iterative  | O(n)  | O(1)  | Preferred — no extra stack memory                   |
+| Recursive  | O(n)  | O(n)  | Elegant but risks stack overflow on very long lists |
+
+---
+
+## **Quick Revision Cheatsheet**
+
+```
+Problem  : Reverse a singly linked list
+Pattern  : Pointer manipulation
+
+Iterative (3 pointers):
+  prev=NULL, curr=head
+  while curr:
+    temp       = curr->next
+    curr->next = prev
+    prev       = curr
+    curr       = temp
+  return prev
+  Time: O(n)  |  Space: O(1)  ← preferred
+
+Recursive:
+  base case: head==NULL || head->next==NULL → return head
+  revHead          = reverse(head->next)
+  head->next->next = head    ← reverse the link
+  head->next       = NULL    ← cut old forward link
+  return revHead
+  Time: O(n)  |  Space: O(n)
+
+```
+---
