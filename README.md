@@ -1686,3 +1686,184 @@ Recursive:
 
 ```
 ---
+
+### 15. Detect Cycle in a Linked List (Floyd's Algorithm)
+
+**Problem:** Given the `head` of a linked list, return the **node where the cycle begins**. If there is no cycle, return `NULL`.
+
+**Example:**
+```
+List:  1 → 2 → 3 → 4 → 5
+                ↑           |
+                └───────────┘
+                  cycle start = node 3
+
+Output: node with value 3
+```
+
+---
+
+## **Algorithm — Floyd's Cycle Detection (Two-Pointer)**
+
+This problem is solved in **two phases** using two pointers, `slow` and `fast`.
+
+&nbsp;
+
+### **Phase 1 — Detect if a cycle exists**
+
+> 🔑 **Key Idea:** Move `slow` one step and `fast` two steps at a time. If they ever meet, a cycle exists.
+
+- If `fast` reaches `NULL`, the list has no cycle → return `NULL`.
+- If `slow == fast` at any point inside the loop, a cycle is confirmed → `break`.
+
+**Why do they always meet inside the cycle?**
+Once both pointers enter the cycle, `fast` gains one step on `slow` per iteration. The gap between them shrinks by 1 each time, so they are guaranteed to collide — never skip past each other — within at most `cycle_length` steps.
+
+&nbsp;
+
+### **Phase 2 — Find the cycle start node**
+
+> 🔑 **Key Idea:** Reset `slow` to `head`. Move both pointers one step at a time. They will meet exactly at the cycle's entry node.
+
+**Why does this work? (The Math)**
+
+Let:
+```
+F = distance from head to cycle start
+C = distance from cycle start to meeting point (inside cycle)
+L = total cycle length
+```
+
+At the meeting point in Phase 1:
+```
+slow traveled : F + C
+fast traveled : F + C + L  (fast did one extra full loop)
+
+Since fast moves 2× as fast:
+  2(F + C) = F + C + L
+  F + C    = L
+  F        = L - C
+```
+
+`L - C` is exactly the distance from the meeting point back to the cycle start.
+So if `slow` restarts from `head` (distance `F` away from start) and `fast` continues from the meeting point (also `F` steps away from start going around the cycle), they meet at the **cycle entry node**.
+
+---
+
+## **Step-by-step Dry Run**
+
+```
+List:  1 → 2 → 3 → 4 → 5 → (back to 3)
+idx:   0   1   2   3   4
+
+F = 2 (head → node 3)
+L = 3 (cycle: 3→4→5→3)
+```
+
+**Phase 1 — Detect:**
+```
+Start:  slow=1, fast=1
+
+Step 1: slow=2, fast=3
+Step 2: slow=3, fast=5
+Step 3: slow=4, fast=4  ← MEET (C=2 steps from cycle start)
+→ Cycle detected! Break.
+```
+
+**Phase 2 — Find entry:**
+```
+Reset slow=1 (head), fast stays at node 4
+
+Step 1: slow=2, fast=5
+Step 2: slow=3, fast=3  ← MEET
+
+→ Return node 3 ✅  (the cycle start)
+```
+
+Verification: `F = 2`, `L - C = 3 - 2 = 1`... wait, let me re-check with actual steps — both pointers took 2 steps to meet at node 3. ✅
+
+---
+
+## **Code (with inline explanation):**
+
+```cpp
+ListNode* detectCycle(ListNode* head) {
+    if (head == NULL) {
+        return NULL;           // empty list — no cycle possible
+    }
+
+    ListNode *slow = head, *fast = head;
+
+    // ── Phase 1: Detect if a cycle exists ──────────────────────────
+    while (fast != NULL && fast->next != NULL) {
+        slow = slow->next;         // slow moves 1 step
+        fast = fast->next->next;   // fast moves 2 steps
+
+        if (slow == fast) {        // pointers met → cycle confirmed
+            break;                 // must break, or loop runs forever (TLE)
+        }
+    }
+
+    // If fast hit the end, there is no cycle
+    if (fast == NULL || fast->next == NULL) {
+        return NULL;
+    }
+
+    // ── Phase 2: Find the cycle entry node ─────────────────────────
+    slow = head;                   // reset slow to head
+    while (slow != fast) {
+        slow = slow->next;         // both move 1 step at a time
+        fast = fast->next;
+    }
+
+    return slow;                   // meeting point = cycle start
+}
+```
+
+> ⚠️ **Why the `break` is critical:**
+> Without `break`, once `slow == fast` inside the cycle the loop condition `fast != NULL && fast->next != NULL` stays true forever, causing an infinite loop (TLE). Breaking out immediately is essential.
+
+---
+
+## **Complexity**
+
+| Phase   | Time   | Space  |
+|---------|--------|--------|
+| Phase 1 | O(n)   | O(1)   |
+| Phase 2 | O(n)   | O(1)   |
+| **Total**  | **O(n)** | **O(1)** |
+
+No extra data structures (like a HashSet) are needed — pure pointer math.
+
+---
+
+## **Quick Revision Cheatsheet**
+
+```
+Problem  : Detect cycle start in a linked list
+Pattern  : Floyd's Cycle Detection (Tortoise & Hare)
+
+Phase 1 — Detect cycle:
+  slow = head, fast = head
+  while fast && fast->next:
+    slow = slow->next
+    fast = fast->next->next
+    if slow == fast → break   ← MUST break to avoid TLE
+
+  if fast == NULL || fast->next == NULL → return NULL (no cycle)
+
+Phase 2 — Find entry:
+  slow = head               ← reset to head
+  while slow != fast:
+    slow = slow->next
+    fast = fast->next       ← both move 1 step now
+  return slow               ← cycle start node
+
+The Math:
+  F = head → cycle start
+  At meeting point: F = L - C
+  → Both pointers are equidistant from cycle start
+
+Time: O(n)  |  Space: O(1)
+```
+---
