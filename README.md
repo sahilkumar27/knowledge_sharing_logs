@@ -1867,3 +1867,163 @@ The Math:
 Time: O(n)  |  Space: O(1)
 ```
 ---
+
+### 16. Middle of a Linked List
+
+**Problem:** Given the `head` of a singly linked list, return the **middle node**. If there are two middle nodes, return the **second** one.
+
+**Example:**
+```
+Odd length:   1 → 2 → [3] → 4 → 5       Middle = node 3
+Even length:  1 → 2 → 3 → [4] → 5 → 6   Middle = node 4  (second middle)
+```
+
+**Intuition:**
+- `fast` moves twice as fast as `slow`.
+- By the time `fast` reaches the end of the list, `slow` has covered exactly half the distance — landing it right at the middle.
+
+**Why does `fast != NULL && fast->next != NULL` handle both odd and even lists?**
+```
+Odd  (n=5): fast exits when fast == NULL        → slow is at index 2  (node 3) ✅
+Even (n=6): fast exits when fast->next == NULL  → slow is at index 3  (node 4) ✅
+```
+
+**Step-by-step dry run:**
+```
+Odd list:  1 → 2 → 3 → 4 → 5
+
+Start: slow=1, fast=1
+Step 1: slow=2, fast=3
+Step 2: slow=3, fast=5
+        fast->next == NULL → exit loop
+Return slow = node 3  ✅
+
+Even list:  1 → 2 → 3 → 4 → 5 → 6
+
+Start: slow=1, fast=1
+Step 1: slow=2, fast=3
+Step 2: slow=3, fast=5
+Step 3: slow=4, fast=NULL → exit loop
+Return slow = node 4  ✅
+```
+
+**Code:**
+```cpp
+ListNode* middleNode(ListNode* head) {
+    ListNode *slow = head, *fast = head;
+
+    while (fast != NULL && fast->next != NULL) {
+        slow = slow->next;         // slow moves 1 step
+        fast = fast->next->next;   // fast moves 2 steps
+    }
+
+    return slow;   // slow is exactly at the middle
+}
+```
+
+**Complexity:**
+- Time: $O(n)$ — single pass
+- Space: $O(1)$ — two pointers only
+
+---
+
+### 17. Detect if a Cycle Exists
+
+**Problem:** Given the `head` of a linked list, return `true` if it contains a cycle, `false` otherwise.
+
+> 📌 This is a simpler variant of Problem 15 — instead of *finding* the cycle start node, we just need to *confirm* whether a cycle exists at all.
+
+**Intuition:**
+- On a cycle-free list, `fast` eventually falls off the end (`NULL`) → no cycle.
+- On a list with a cycle, `fast` loops around and laps `slow` — they are guaranteed to collide.
+
+Think of it like two runners on a circular track: the faster one always catches the slower one.
+
+**Step-by-step dry run:**
+```
+No cycle:  1 → 2 → 3 → NULL
+
+Start: slow=1, fast=1
+Step 1: slow=2, fast=3
+Step 2: slow=3, fast=NULL → exit loop
+→ return false  ✅
+
+With cycle:  1 → 2 → 3 → 4 → (back to 2)
+
+Start: slow=1, fast=1
+Step 1: slow=2, fast=3
+Step 2: slow=3, fast=2   (fast looped around)
+Step 3: slow=4, fast=4   ← slow == fast!
+→ return true  ✅
+```
+
+**Code:**
+```cpp
+bool hasCycle(ListNode* head) {
+    if (head == NULL) {
+        return false;              // empty list can't have a cycle
+    }
+
+    ListNode *slow = head, *fast = head;
+
+    while (fast != NULL && fast->next != NULL) {
+        slow = slow->next;         // slow moves 1 step
+        fast = fast->next->next;   // fast moves 2 steps
+
+        if (slow == fast) {        // pointers met → cycle confirmed
+            return true;
+        }
+    }
+
+    return false;                  // fast hit NULL → no cycle
+}
+```
+
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(1)$
+
+---
+
+## **The Two-Pointer Pattern — How Problems 16, 17 & 15 Connect**
+
+All three problems share the exact same loop. The only difference is what we do with the result:
+
+| Problem               | Loop | Extra logic              | Return                |
+|-----------------------|:----:|--------------------------|-----------------------|
+| 16. Middle of List    | ✅   | None — just let it run   | `slow` at loop exit   |
+| 17. Has Cycle?        | ✅   | Check `slow==fast` inside | `true` / `false`     |
+| 15. Find Cycle Start  | ✅   | Break + Phase 2 reset    | Cycle entry node      |
+
+> ✅ **Master the two-pointer loop once — apply it to all three problems.**
+
+---
+
+## **Quick Revision Cheatsheet**
+
+```
+Pattern: slow moves 1 step, fast moves 2 steps
+Loop guard: while (fast != NULL && fast->next != NULL)
+
+──────────────────────────────────────────────────────────
+16. MIDDLE NODE
+  No extra logic — just run the loop to completion
+  Return slow at exit
+  Odd list  → fast == NULL        (slow = exact middle)
+  Even list → fast->next == NULL  (slow = second middle)
+  Time: O(n)  |  Space: O(1)
+
+──────────────────────────────────────────────────────────
+17. HAS CYCLE (boolean)
+  Inside loop: if slow == fast → return true
+  After loop:  return false
+  Time: O(n)  |  Space: O(1)
+
+──────────────────────────────────────────────────────────
+15. FIND CYCLE START (see previous entry)
+  Phase 1: same loop + break on slow == fast
+  Phase 2: reset slow = head, walk both 1 step until they meet
+  Return slow = cycle entry node
+  Time: O(n)  |  Space: O(1)
+```
+---
