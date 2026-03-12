@@ -2027,3 +2027,241 @@ Loop guard: while (fast != NULL && fast->next != NULL)
   Time: O(n)  |  Space: O(1)
 ```
 ---
+### 18. Palindrome Linked List
+
+**Problem:** Given the `head` of a singly linked list, return `true` if it is a palindrome, `false` otherwise.
+
+**Example:**
+```
+Input:  1 → 2 → 2 → 1   →  true
+Input:  1 → 2 → 3 → 2   →  false
+
+Odd length:
+Input:  1 → 2 → 3 → 2 → 1  →  true
+```
+
+**Approach:**
+1. Use **slow & fast pointers** to find the middle of the list.
+2. **Split** the list into two halves by cutting the link at the middle.
+3. **Reverse** the second half.
+4. **Compare** both halves node by node — if all values match, it's a palindrome.
+
+**Why split and reverse?**
+- We can't traverse a singly linked list backwards.
+- Reversing the second half lets us compare it forward against the first half.
+
+**Handling odd vs even lengths:**
+```
+Even (n=4):  1 → 2 | 2 → 1
+  fast == NULL when loop ends → second half starts at slow
+
+Odd (n=5):   1 → 2 → [3] → 2 → 1
+  fast->next == NULL when loop ends → middle node is slow
+  second half starts at slow->next (skip the middle node)
+```
+
+**Step-by-step dry run:**
+```
+List: 1 → 2 → 2 → 1
+
+slow/fast start at node 1
+
+Step 1: prev=1, slow=2, fast=3
+Step 2: prev=2, slow=3, fast=NULL  → loop exits (fast==NULL, even list)
+
+Split:  first = [1 → 2]    second = [2 → 1]
+        prev->next = NULL cuts the link
+
+Reverse second half:  [1 → 2]
+
+Compare:
+  revHead=1  first=1  ✅
+  revHead=2  first=2  ✅
+  revHead=NULL → loop ends
+
+Return true ✅
+```
+
+**Code:**
+```cpp
+ListNode* reverseNode(ListNode* currHead) {
+    ListNode *curr = currHead, *temp = currHead, *prev = NULL;
+    while (curr) {
+        temp = curr->next;   // save next node
+        curr->next = prev;   // reverse the link
+        prev = curr;         // advance prev
+        curr = temp;         // advance curr
+    }
+    return prev;             // prev is the new head after full reversal
+}
+
+bool isPalindrome(ListNode* head) {
+    // Edge case: 0 or 1 node is always a palindrome
+    if (!head || !head->next) return true;
+
+    ListNode *slow = head, *fast = head, *prev = NULL;
+
+    // Step 1: Find the middle using slow & fast pointers
+    while (fast != NULL && fast->next != NULL) {
+        prev = slow;
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+
+    ListNode *first = head, *second = NULL;
+
+    // Step 2: Determine where the second half starts
+    if (fast == NULL) {
+        // Even length: slow is exactly the start of second half
+        second = slow;
+    } else {
+        // Odd length: slow is the middle node, skip it
+        second = slow->next;
+    }
+
+    // Step 3: Cut the list — first half ends here
+    prev->next = NULL;
+
+    // Step 4: Reverse the second half
+    ListNode* revHead = reverseNode(second);
+
+    // Step 5: Compare both halves
+    while (revHead != NULL) {
+        if (revHead->val != first->val) return false;
+        revHead = revHead->next;
+        first = first->next;
+    }
+
+    return true;
+}
+```
+
+**Complexity:**
+- Time: $O(n)$ — one pass to find middle + one pass to reverse + one pass to compare
+- Space: $O(1)$ — only pointer variables, no extra data structures
+
+**Key pointer roles:**
+| Pointer | Role |
+|---------|------|
+| `slow` | Finds the middle (moves 1 step) |
+| `fast` | Drives the loop (moves 2 steps) |
+| `prev` | Tracks the node just before `slow` — used to cut the list |
+| `first` | Walks the first half during comparison |
+| `revHead` | Walks the reversed second half during comparison |
+
+---
+
+### 19. Rotate Linked List to the Right by K Places
+
+**Problem:** Given the `head` of a linked list and an integer `k`, rotate the list to the right by `k` places.
+
+**Example:**
+```
+Input:  1 → 2 → 3 → 4 → 5,  k = 2
+Output: 4 → 5 → 1 → 2 → 3
+
+Input:  1 → 2 → 3,  k = 4
+Output: 3 → 1 → 2   (k % 3 = 1, same as rotating once)
+```
+
+**Intuition:**
+Rotating right by `k` means the last `k` nodes move to the front.
+Equivalently, the new head is the node at position `(length - k)` from the start (1-indexed).
+
+**Key insight — reduce k:**
+If `k >= length`, full rotations bring the list back to its original state. So `k = k % length` eliminates redundant rotations.
+
+**Approach:**
+1. Compute the length of the list.
+2. Reduce `k` with `k = k % length`. If `k == 0`, return the list unchanged.
+3. Convert to an equivalent **left rotation** count: `k = length - k`. Now walk `k` steps to find the new tail.
+4. The node at step `k` is the **new tail**; its next is the **new head**.
+5. Connect the old tail back to the old head to complete the rotation.
+
+**Step-by-step dry run:**
+```
+List: 1 → 2 → 3 → 4 → 5,  k = 2
+length = 5
+k = 2 % 5 = 2
+k = 5 - 2 = 3   (walk 3 steps to find new tail)
+
+Walk 3 steps:
+  prev=NULL, temp=1
+  Step 1: prev=1, temp=2
+  Step 2: prev=2, temp=3
+  Step 3: prev=3, temp=4
+
+New tail = node 3  →  prev->next = NULL  →  list is cut: [1→2→3]  [4→5]
+New head = node 4  (ans = temp)
+
+Walk to end of second part: temp=4 → temp=5 → temp->next==NULL
+Connect: 5->next = 1 (old head)
+
+Result: 4 → 5 → 1 → 2 → 3  ✅
+```
+
+**Code:**
+```cpp
+int lengthOfLL(ListNode* curr) {
+    int count = 0;
+    while (curr) {
+        count++;
+        curr = curr->next;
+    }
+    return count;
+}
+
+ListNode* rotateRight(ListNode* head, int k) {
+    // Edge case: empty list or single node — nothing to rotate
+    if (!head || !head->next) return head;
+
+    int length = lengthOfLL(head);
+
+    // Reduce k: full rotations cancel out
+    k = k % length;
+    if (k == 0) return head;   // already in original order
+
+    // Convert right rotation to equivalent left rotation steps
+    k = length - k;
+
+    // Walk k steps to find the new tail
+    ListNode *prev = NULL, *temp = head;
+    while (k--) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    // Cut the list: prev is new tail, temp is new head
+    prev->next = NULL;
+    ListNode* ans = temp;
+
+    // Walk to the end of the rotated segment
+    while (temp->next != NULL) {
+        temp = temp->next;
+    }
+
+    // Connect old tail to old head — completes the rotation
+    temp->next = head;
+
+    return ans;
+}
+```
+
+**Complexity:**
+- Time: $O(n)$ — one pass for length + one pass to find split point + one pass to find old tail
+- Space: $O(1)$ — only pointer variables
+
+**Key pointer roles:**
+| Pointer | Role |
+|---------|------|
+| `temp` | Walks the list; becomes new head after the cut |
+| `prev` | Trails one step behind `temp`; becomes new tail after the cut |
+| `ans` | Saves the new head (`temp` at split point) to return |
+
+**Edge cases handled:**
+```
+k = 0 or k = multiple of length  →  return head unchanged (no-op rotation)
+Single node list                  →  return head unchanged
+```
+
+---
