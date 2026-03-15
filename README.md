@@ -2265,3 +2265,98 @@ Single node list                  →  return head unchanged
 ```
 
 ---
+
+### 20. Add Two Numbers
+
+**Problem:** You are given two non-empty linked lists representing two non-negative integers. The digits are stored in **reverse order**, and each node contains a single digit. Add the two numbers and return the sum as a linked list (also in reverse order).
+
+**Example:**
+```
+Input:  l1 = 2 → 4 → 3   (represents 342)
+        l2 = 5 → 6 → 4   (represents 465)
+Output: 7 → 0 → 8         (represents 807)
+
+Input:  l1 = 9 → 9 → 9 → 9 → 9 → 9 → 9
+        l2 = 9 → 9 → 9 → 9
+Output: 8 → 9 → 9 → 9 → 0 → 0 → 0 → 1
+```
+
+**Approach:**
+1. Handle edge cases: if either list is empty, return the other.
+2. Create a **dummy head node** to simplify result list construction.
+3. Walk both lists simultaneously, summing digits and carrying over:
+   - `sum = carry + (l1->val if l1 exists) + (l2->val if l2 exists)`
+   - New digit = `sum % 10`, new carry = `sum / 10`
+4. Append each computed digit as a new node.
+5. Continue until **both lists are exhausted AND carry is 0**.
+6. Return `dummyNode->next` (the actual head of the result).
+
+**Why a dummy node?**
+- It eliminates the special case of initializing the head of the result list — we always append to `dummyNode->next` and return that.
+
+**Step-by-step dry run:**
+```
+l1: 2 → 4 → 3   l2: 5 → 6 → 4   carry = 0
+
+Step 1: sum = 0 + 2 + 5 = 7   → digit=7, carry=0   result: 7
+Step 2: sum = 0 + 4 + 6 = 10  → digit=0, carry=1   result: 7 → 0
+Step 3: sum = 1 + 3 + 4 = 8   → digit=8, carry=0   result: 7 → 0 → 8
+Both lists exhausted, carry=0 → done
+
+Output: 7 → 0 → 8  ✅  (represents 807 = 342 + 465)
+```
+
+**Code:**
+```cpp
+ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+    if (!l1) return l2;
+    if (!l2) return l1;
+
+    ListNode* dummyNode = new ListNode(0);
+    ListNode* temp = dummyNode;
+    int carry = 0;
+
+    while (l1 || l2 || carry) {
+        int sum = carry;
+
+        if (l1) {
+            sum += l1->val;
+            l1 = l1->next;
+        }
+        if (l2) {
+            sum += l2->val;
+            l2 = l2->next;
+        }
+
+        carry = sum / 10;
+        sum %= 10;
+
+        ListNode* newNode = new ListNode(sum);
+        temp->next = newNode;
+        temp = newNode;
+    }
+
+    return dummyNode->next;
+}
+```
+
+**Complexity:**
+- Time: $O(\max(m, n))$ — traverse both lists once, where m and n are their lengths
+- Space: $O(\max(m, n))$ — result list has at most $\max(m, n) + 1$ nodes (due to a possible final carry)
+
+**Key roles:**
+| Variable | Role |
+|----------|------|
+| `dummyNode` | Anchor for the result list; avoids special-casing the head |
+| `temp` | Tail pointer — always points to the last node appended |
+| `carry` | Holds the overflow digit (0 or 1) from the previous addition |
+| `sum` | Accumulates digit sum including carry, then splits into digit + new carry |
+
+**Edge cases handled:**
+```
+One list shorter than the other  →  missing digits treated as 0
+Final carry remaining             →  loop condition (|| carry) appends an extra node
+Either list is NULL               →  early return of the other list
+```
+
+---
