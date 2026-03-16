@@ -98,6 +98,11 @@ vector<int> productExceptSelf(vector<int>& nums) {
     return ans;
 }
 ```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(1)$ (excluding output array)
+
+---
 
 ### 4. Set Matrix Zeros
 
@@ -2358,5 +2363,44 @@ One list shorter than the other  →  missing digits treated as 0
 Final carry remaining             →  loop condition (|| carry) appends an extra node
 Either list is NULL               →  early return of the other list
 ```
+
+---
+
+### 21. Reverse Linked List in Groups of Size K
+
+**Problem:** Given a linked list, reverse the nodes of the list k at a time and return the modified list. If the number of nodes is not a multiple of k, the remaining nodes should stay as they are.
+
+**Approach:**
+1. First check if we have at least k nodes remaining - if not, return head unchanged.
+2. Reverse the first k nodes using standard linked list reversal.
+3. Recursively call the function for the remaining list.
+4. Connect the reversed first k nodes with the result from the recursive call.
+5. Return the new head (which is the kth node from the original list).
+
+**Code:**
+```cpp
+ListNode* reverseKGroup(ListNode* head, int k) {
+    ListNode *curr = head;
+    for(int i = 0; i < k; i++){
+        if(!curr){
+            return head;
+        }
+        curr = curr->next;
+    }
+    curr = head;
+    ListNode *temp = NULL, *prev = NULL;
+    for(int i = 0; i < k; i++){
+        temp = curr->next;
+        curr->next = prev;
+        prev = curr;
+        curr = temp;
+    }
+    head->next = reverseKGroup(curr, k);
+    return prev;
+}
+```
+**Complexity:**
+- Time: $O(n)$ where n is the number of nodes
+- Space: $O(n/k)$ due to recursion stack
 
 ---
