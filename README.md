@@ -2404,3 +2404,65 @@ ListNode* reverseKGroup(ListNode* head, int k) {
 - Space: $O(n/k)$ due to recursion stack
 
 ---
+
+### 22. Delete a Node in a Linked List (Without Head Reference)
+
+**Problem:** Given only a pointer to the node to be deleted (not the head of the list), delete that node. The node to delete is guaranteed not to be the last node.
+
+**Example:**
+```
+Input:  1 → 2 → 3 → 4 → 5,  del_node points to node(3)
+Output: 1 → 2 → 4 → 5
+```
+
+**Intuition:**
+Since we don't have access to the previous node (no head pointer), we can't do a traditional deletion. Instead, we **copy data forward** — shift each node's value one step back — then delete the last node.
+
+**Approach:**
+1. Walk forward from `del_node`, copying the next node's data into the current node.
+2. Keep tracking `prev` (the node just before the current position).
+3. Once we reach the last node, set `prev->next = NULL` and delete the last node.
+
+**Step-by-step dry run:**
+```
+List: 1 → 2 → 3 → 4 → 5,  del_node = node(3)
+
+Iteration 1: node(3).data = node(4).data → list: 1 → 2 → 4 → 4 → 5,  prev=node(3), del_node=node(4)
+Iteration 2: node(4).data = node(5).data → list: 1 → 2 → 4 → 5 → 5,  prev=node(4), del_node=node(5)
+node(5)->next == NULL → exit loop
+
+prev->next = NULL  →  list: 1 → 2 → 4 → 5
+delete node(5)  ✅
+```
+
+**Code:**
+```cpp
+void deleteNode(Node* del_node) {
+    Node *prev = NULL;
+    while (del_node->next != NULL) {
+        prev = del_node;
+        del_node->data = del_node->next->data;
+        del_node = del_node->next;
+    }
+    prev->next = NULL;
+    delete(del_node);
+}
+```
+
+**Complexity:**
+- Time: $O(n)$ — walks from the target node to the end of the list
+- Space: $O(1)$ — only pointer variables
+
+**Key pointer roles:**
+| Pointer | Role |
+|---------|------|
+| `del_node` | Walks forward; carries the data-copy operation |
+| `prev` | Trails one step behind; used to cut the last node off the list |
+
+**Edge cases:**
+```
+del_node is the second-to-last node  →  one iteration, then prev->next = NULL, last node deleted
+del_node is guaranteed non-last      →  prev will always be set before the delete
+```
+
+---
