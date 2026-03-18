@@ -1,0 +1,421 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-mono,'Courier New',monospace);background:var(--color-background-tertiary);padding:12px}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:12px;overflow:hidden}
+.panel-hdr{padding:8px 14px;font-size:12px;font-weight:500;letter-spacing:.04em;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)}
+.code-body{padding:10px 14px;font-size:11.5px;line-height:1.9;color:var(--color-text-primary);overflow-x:auto;white-space:pre}
+.code-body span.hl{background:#fde68a;color:#78350f;border-radius:3px;padding:1px 3px;display:inline-block;width:100%;font-weight:500}
+.code-body span.hl-bt{background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 3px;display:inline-block;width:100%;font-weight:500}
+.code-body span.hl-ok{background:#d1fae5;color:#065f46;border-radius:3px;padding:1px 3px;display:inline-block;width:100%;font-weight:500}
+.code-body span.hl-call{background:#e0e7ff;color:#3730a3;border-radius:3px;padding:1px 3px;display:inline-block;width:100%;font-weight:500}
+.right-col{display:flex;flex-direction:column;gap:10px}
+.board-panel{padding:12px 14px}
+.board-grid{display:grid;grid-template-columns:repeat(4,1fr);width:140px;border:2px solid var(--color-border-primary)}
+.cell{width:35px;height:35px;display:flex;align-items:center;justify-content:center;font-size:18px;border:0.5px solid var(--color-border-tertiary)}
+.cell.w{background:#f5f0e4}.cell.d{background:#c8b89a}
+.cell.trying{background:#dbeafe;border:2px solid #2563eb}
+.cell.placed{background:#d1fae5}
+.cell.blocked{background:#fee2e2}
+.cell.bt-cell{background:#fef3c7}
+.cell.sol{background:#d1fae5}
+.col-lbl{display:flex;width:140px;margin-top:2px}
+.col-lbl span{width:35px;text-align:center;font-size:10px;color:var(--color-text-tertiary)}
+.row-wrap{display:flex;gap:4px;align-items:flex-start}
+.row-lbl{display:flex;flex-direction:column;justify-content:space-around;height:140px;padding:2px 0}
+.row-lbl span{font-size:10px;color:var(--color-text-tertiary);height:35px;display:flex;align-items:center}
+.info-panel{padding:10px 14px}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;margin-bottom:6px}
+.badge.try{background:#dbeafe;color:#1d4ed8}
+.badge.fail{background:#fee2e2;color:#991b1b}
+.badge.place{background:#d1fae5;color:#065f46}
+.badge.bt{background:#fef3c7;color:#92400e}
+.badge.sol{background:#d1fae5;color:#065f46}
+.badge.check{background:#ede9fe;color:#4c1d95}
+.info-line{font-size:12px;line-height:1.8;color:var(--color-text-secondary);font-family:var(--font-sans,'system-ui')}
+.info-line b{color:var(--color-text-primary);font-weight:500}
+.call-stack{padding:8px 14px;font-size:11px;line-height:1.7;color:var(--color-text-secondary)}
+.call-stack .frame{padding:2px 6px;border-left:2px solid var(--color-border-tertiary);margin-bottom:2px;font-family:var(--font-mono)}
+.call-stack .frame.active{border-left-color:#2563eb;color:var(--color-text-primary);background:var(--color-background-info);border-radius:0 4px 4px 0}
+.call-stack .frame.bt-frame{border-left-color:#dc2626;color:#991b1b;background:#fff5f5;border-radius:0 4px 4px 0}
+.checks-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px}
+.chk{font-size:11px;padding:3px 6px;border-radius:4px;text-align:center}
+.chk.pass{background:#d1fae5;color:#065f46}
+.chk.fail{background:#fee2e2;color:#991b1b}
+.chk.skip{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+.nav{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary);flex-wrap:wrap}
+.nav button{font-size:13px;padding:5px 14px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);border-radius:8px;cursor:pointer;font-family:inherit}
+.nav button:hover{background:var(--color-background-tertiary)}
+.nav button:disabled{opacity:.35;cursor:not-allowed}
+.nav .ctr{font-size:11px;color:var(--color-text-secondary);margin-left:auto}
+.dots{display:flex;flex-wrap:wrap;gap:4px;padding:6px 14px 0}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--color-border-secondary);cursor:pointer;transition:.15s}
+.dot.done{background:#93c5fd}
+.dot.cur{background:#2563eb;transform:scale(1.4)}
+.dot.bt-d{background:#fca5a5}
+.dot.ok-d{background:#6ee7b7}
+.vars-row{display:flex;gap:6px;flex-wrap:wrap;padding:6px 14px;border-top:0.5px solid var(--color-border-tertiary)}
+.var-chip{font-size:11px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:3px 7px;font-family:var(--font-mono)}
+.var-chip b{color:#2563eb}
+.var-chip.changed{background:#fef9c3;border-color:#fde047}
+</style>
+
+<div id="root"></div>
+
+<script>
+const CODE_LINES = [
+"bool isSafe(board, row, col, n) {",
+"  // horizontal check",
+"  for(int j=0; j<n; j++)",
+"    if(board[row][j]=='Q') return false;",
+"",
+"  // vertical check",
+"  for(int i=0; i<n; i++)",
+"    if(board[i][col]=='Q') return false;",
+"",
+"  // left diagonal",
+"  for(i=row,j=col; i>=0&&j>=0; i--,j--)",
+"    if(board[i][j]=='Q') return false;",
+"",
+"  // right diagonal",
+"  for(i=row,j=col; i>=0&&j<n; i--,j++)",
+"    if(board[i][j]=='Q') return false;",
+"",
+"  return true;",
+"}",
+"",
+"void nQueens(board, row, n, ans) {",
+"  if(row == n) {",
+"    ans.push_back(board); return;",
+"  }",
+"  for(int j=0; j<n; j++) {",
+"    if(isSafe(board, row, j, n)) {",
+"      board[row][j] = 'Q';",
+"      nQueens(board, row+1, n, ans);",
+"      board[row][j] = '.';",
+"    }",
+"  }",
+"}"
+];
+
+const STEPS = [
+{title:"Start",badge:"try",
+ hl:[20],hltype:"call",
+ board:[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>nQueens(board, row=0, n=4)</b> is called.<br>Board is all dots. row != n, so enter for loop.",
+ stack:["nQueens(row=0)"],
+ vars:{row:0,j:"-",n:4},
+ checks:null},
+
+{title:"Row 0, try j=0",badge:"check",
+ hl:[24,25],hltype:"",
+ board:[[2,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>isSafe(board,0,0,4)</b> called.<br>Board empty — horizontal, vertical, both diagonals all PASS.",
+ stack:["nQueens(row=0)","isSafe(row=0,col=0)"],
+ vars:{row:0,j:0,n:4},
+ checks:["horizontal PASS","vertical PASS","left diag PASS","right diag PASS"]},
+
+{title:"Place Q → (0,0). Recurse row=1",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[1,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>board[0][0]='Q'</b> placed.<br>Line 27: <b>nQueens(board, row=1, n=4)</b> called.",
+ stack:["nQueens(row=0)","nQueens(row=1)"],
+ vars:{row:1,j:0,n:4},
+ checks:null},
+
+{title:"Row 1, j=0 — vertical FAIL",badge:"fail",
+ hl:[7],hltype:"hl-bt",
+ board:[[1,0,0,0],[3,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>isSafe(board,1,0)</b>: vertical loop hits Q at board[0][0].<br>Returns <b>false</b>. Skip col 0.",
+ stack:["nQueens(row=0)","nQueens(row=1)","isSafe(row=1,col=0)"],
+ vars:{row:1,j:0,n:4},
+ checks:["horizontal PASS","vertical FAIL","—","—"]},
+
+{title:"Row 1, j=1 — left diag FAIL",badge:"fail",
+ hl:[11],hltype:"hl-bt",
+ board:[[1,0,0,0],[0,3,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>isSafe(board,1,1)</b>: left diagonal loop: (1,1)→(0,0) = Q!<br>Returns <b>false</b>. Skip col 1.",
+ stack:["nQueens(row=0)","nQueens(row=1)","isSafe(row=1,col=1)"],
+ vars:{row:1,j:1,n:4},
+ checks:["horizontal PASS","vertical PASS","left diag FAIL","—"]},
+
+{title:"Row 1, j=2 — all PASS",badge:"check",
+ hl:[25],hltype:"",
+ board:[[1,0,0,0],[0,0,2,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>isSafe(board,1,2)</b>: all 4 checks pass.<br>Returns <b>true</b>.",
+ stack:["nQueens(row=0)","nQueens(row=1)","isSafe(row=1,col=2)"],
+ vars:{row:1,j:2,n:4},
+ checks:["horizontal PASS","vertical PASS","left diag PASS","right diag PASS"]},
+
+{title:"Place Q → (1,2). Recurse row=2",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[1,0,0,0],[0,0,1,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>board[1][2]='Q'</b>.<br>Line 27: <b>nQueens(board, row=2)</b> called.",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)"],
+ vars:{row:2,j:0,n:4},
+ checks:null},
+
+{title:"Row 2 — ALL cols fail!",badge:"fail",
+ hl:[24],hltype:"hl-bt",
+ board:[[1,0,0,0],[0,0,1,0],[3,3,3,3],[0,0,0,0]],
+ info:"All 4 cols blocked:<br>j=0: diag from (0,0) | j=1: diag from (1,2)<br>j=2: same col as (1,2) | j=3: diag from (1,2)",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)"],
+ vars:{row:2,j:"all",n:4},
+ checks:["j=0: diag FAIL","j=1: diag FAIL","j=2: col FAIL","j=3: diag FAIL"]},
+
+{title:"BACKTRACK — board[1][2]='.'",badge:"bt",
+ hl:[28],hltype:"hl-bt",
+ board:[[1,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>nQueens(row=2)</b> returns (no solution found).<br>Line 28: <b>board[1][2]='.'</b> — undo placement!<br>Back in row=1 loop, j becomes 3.",
+ stack:["nQueens(row=0)","nQueens(row=1) ← back here"],
+ vars:{row:1,j:3,n:4},
+ checks:null},
+
+{title:"Row 1, j=3 — all PASS",badge:"check",
+ hl:[25],hltype:"",
+ board:[[1,0,0,0],[0,0,0,2],[0,0,0,0],[0,0,0,0]],
+ info:"<b>isSafe(board,1,3)</b>: all checks pass.<br>Returns <b>true</b>.",
+ stack:["nQueens(row=0)","nQueens(row=1)","isSafe(row=1,col=3)"],
+ vars:{row:1,j:3,n:4},
+ checks:["horizontal PASS","vertical PASS","left diag PASS","right diag PASS"]},
+
+{title:"Place Q → (1,3). Recurse row=2",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[1,0,0,0],[0,0,0,1],[0,0,0,0],[0,0,0,0]],
+ info:"<b>board[1][3]='Q'</b>.<br>Line 27: <b>nQueens(board, row=2)</b> called.",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)"],
+ vars:{row:2,j:0,n:4},
+ checks:null},
+
+{title:"Row 2, j=1 — PASS",badge:"check",
+ hl:[25],hltype:"",
+ board:[[1,0,0,0],[0,0,0,1],[0,2,0,0],[0,0,0,0]],
+ info:"j=0 fails (diag from 1,3). j=1: <b>isSafe(board,2,1)</b> passes!",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","isSafe(row=2,col=1)"],
+ vars:{row:2,j:1,n:4},
+ checks:["horizontal PASS","vertical PASS","left diag PASS","right diag PASS"]},
+
+{title:"Place Q → (2,1). Recurse row=3",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[1,0,0,0],[0,0,0,1],[0,1,0,0],[0,0,0,0]],
+ info:"<b>board[2][1]='Q'</b>.<br>Line 27: <b>nQueens(board, row=3)</b> called.",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","nQueens(row=3)"],
+ vars:{row:3,j:0,n:4},
+ checks:null},
+
+{title:"Row 3 — ALL cols fail!",badge:"fail",
+ hl:[24],hltype:"hl-bt",
+ board:[[1,0,0,0],[0,0,0,1],[0,1,0,0],[3,3,3,3]],
+ info:"j=0: diag(2,1) | j=1: same col(2,1) | j=2: diag(2,1) | j=3: same col(1,3)<br>All blocked!",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","nQueens(row=3)"],
+ vars:{row:3,j:"all",n:4},
+ checks:["j=0: diag FAIL","j=1: col FAIL","j=2: diag FAIL","j=3: col FAIL"]},
+
+{title:"BACKTRACK — board[2][1]='.'  and  board[1][3]='.'",badge:"bt",
+ hl:[28],hltype:"hl-bt",
+ board:[[1,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"Row=3 returns. Line 28: <b>board[2][1]='.'</b><br>Row=2: j=2 & j=3 also fail. Row=1 loop ends.<br>Line 28: <b>board[1][3]='.'</b> → back to row=1 fully done.",
+ stack:["nQueens(row=0) ← back"],
+ vars:{row:0,j:1,n:4},
+ checks:null},
+
+{title:"BACKTRACK — board[0][0]='.' → try j=1",badge:"bt",
+ hl:[28],hltype:"hl-bt",
+ board:[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"nQueens(row=1) returned fully. Line 28: <b>board[0][0]='.'</b><br>Row=0 loop continues: j=1.",
+ stack:["nQueens(row=0) j=1 now"],
+ vars:{row:0,j:1,n:4},
+ checks:null},
+
+{title:"Place Q → (0,1). Recurse row=1",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[0,1,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+ info:"<b>isSafe(0,1)</b> passes (empty board). <b>board[0][1]='Q'</b>.<br>nQueens(board, row=1) called.",
+ stack:["nQueens(row=0)","nQueens(row=1)"],
+ vars:{row:1,j:0,n:4},
+ checks:null},
+
+{title:"Row 1: j=0,1,2 fail → j=3 PASS",badge:"check",
+ hl:[25],hltype:"",
+ board:[[0,1,0,0],[0,0,0,2],[0,0,0,0],[0,0,0,0]],
+ info:"j=0: diag | j=1: same col | j=2: diag — all fail.<br><b>isSafe(1,3)</b> PASSES!",
+ stack:["nQueens(row=0)","nQueens(row=1)","isSafe(row=1,col=3)"],
+ vars:{row:1,j:3,n:4},
+ checks:["j=0 diag FAIL","j=1 col FAIL","j=2 diag FAIL","j=3 PASS"]},
+
+{title:"Place Q → (1,3). Recurse row=2",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[0,1,0,0],[0,0,0,1],[0,0,0,0],[0,0,0,0]],
+ info:"<b>board[1][3]='Q'</b>. nQueens(row=2) called.",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)"],
+ vars:{row:2,j:0,n:4},
+ checks:null},
+
+{title:"Row 2, j=0 — all PASS",badge:"check",
+ hl:[25],hltype:"",
+ board:[[0,1,0,0],[0,0,0,1],[2,0,0,0],[0,0,0,0]],
+ info:"<b>isSafe(2,0)</b>: no queen in row 2, col 0, diags → PASS!",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","isSafe(row=2,col=0)"],
+ vars:{row:2,j:0,n:4},
+ checks:["horizontal PASS","vertical PASS","left diag PASS","right diag PASS"]},
+
+{title:"Place Q → (2,0). Recurse row=3",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[0,1,0,0],[0,0,0,1],[1,0,0,0],[0,0,0,0]],
+ info:"<b>board[2][0]='Q'</b>. nQueens(row=3) called.",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","nQueens(row=3)"],
+ vars:{row:3,j:0,n:4},
+ checks:null},
+
+{title:"Row 3, j=2 — all PASS!",badge:"check",
+ hl:[25],hltype:"",
+ board:[[0,1,0,0],[0,0,0,1],[1,0,0,0],[0,0,2,0]],
+ info:"j=0,1 fail. <b>isSafe(3,2)</b> all checks PASS!",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","nQueens(row=3)","isSafe(row=3,col=2)"],
+ vars:{row:3,j:2,n:4},
+ checks:["horizontal PASS","vertical PASS","left diag PASS","right diag PASS"]},
+
+{title:"Place Q → (3,2). Recurse row=4",badge:"place",
+ hl:[26,27],hltype:"ok",
+ board:[[0,1,0,0],[0,0,0,1],[1,0,0,0],[0,0,1,0]],
+ info:"<b>board[3][2]='Q'</b>. nQueens(board, row=4) called.",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","nQueens(row=3)","nQueens(row=4)"],
+ vars:{row:4,j:"-",n:4},
+ checks:null},
+
+{title:"row == n=4 → BASE CASE! SOLUTION FOUND",badge:"sol",
+ hl:[21,22],hltype:"hl-ok",
+ board:[[0,1,0,0],[0,0,0,1],[1,0,0,0],[0,0,1,0]],
+ info:"Line 21: <b>row == n</b> is TRUE!<br>Line 22: <b>ans.push_back(board)</b><br>Solution 1 stored: .Q.. / ...Q / Q... / ..Q.",
+ stack:["nQueens(row=0)","nQueens(row=1)","nQueens(row=2)","nQueens(row=3)","nQueens(row=4) BASE CASE"],
+ vars:{row:4,j:"-",n:4},
+ checks:null},
+
+{title:"Backtrack all the way → Solution 2 found",badge:"sol",
+ hl:[21,22],hltype:"hl-ok",
+ board:[[0,0,1,0],[1,0,0,0],[0,0,0,1],[0,1,0,0]],
+ info:"After storing sol 1, algorithm backtracks and explores remaining paths.<br>Eventually finds Sol 2: ..Q. / Q... / ...Q / .Q.",
+ stack:["Full backtrack → new branches explored","Solution 2 stored in ans"],
+ vars:{row:4,j:"-",n:4},
+ checks:null},
+];
+
+let cur=0;
+const COLOR={try:"#3b82f6",bt:"#dc2626",place:"#16a34a",check:"#7c3aed",sol:"#16a34a",fail:"#dc2626"};
+
+function mkBoard(b){
+  let h='<div class="row-wrap"><div class="row-lbl">';
+  for(let r=0;r<4;r++) h+=`<span>r${r}</span>`;
+  h+='</div><div><div class="board-grid">';
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    const base=(r+c)%2===0?'w':'d';
+    const v=b[r][c];
+    let cls=base,inner='';
+    if(v===1){cls+=' placed';inner='<span style="font-size:18px;color:#15803d">&#9819;</span>';}
+    else if(v===2){cls+=' trying';inner='<span style="font-size:18px;color:#1d4ed8;opacity:.7">&#9819;</span>';}
+    else if(v===3){cls+=' blocked';inner='<span style="font-size:13px;font-weight:500;color:#dc2626">&#10005;</span>';}
+    h+=`<div class="cell ${cls}">${inner}</div>`;
+  }
+  h+='</div><div class="col-lbl">';
+  for(let c=0;c<4;c++) h+=`<span>c${c}</span>`;
+  h+='</div></div></div>';
+  return h;
+}
+
+function mkCode(hlLines,hltype){
+  let h='';
+  CODE_LINES.forEach((ln,i)=>{
+    const isHl=hlLines&&hlLines.includes(i);
+    if(isHl) h+=`<span class="${hltype||'hl'}">${ln||' '}</span>\n`;
+    else h+=`${ln}\n`;
+  });
+  return h;
+}
+
+function mkChecks(chk){
+  if(!chk)return '';
+  let h='<div class="checks-row">';
+  chk.forEach(c=>{
+    const cls=c.includes('PASS')?'pass':c.includes('FAIL')?'fail':'skip';
+    h+=`<div class="chk ${cls}">${c}</div>`;
+  });
+  return h+'</div>';
+}
+
+function mkStack(frames){
+  let h='';
+  frames.forEach((f,i)=>{
+    const isLast=i===frames.length-1;
+    const isBt=f.includes('BACK')||f.includes('back');
+    h+=`<div class="frame ${isLast?(isBt?'bt-frame':'active'):''}">${f}</div>`;
+  });
+  return h;
+}
+
+function render(){
+  const s=STEPS[cur];
+  const btypes={try:'try',check:'check',place:'place',bt:'bt',sol:'sol',fail:'fail'};
+  const blabels={try:'try',check:'isSafe',place:'place Q',bt:'backtrack',sol:'solution!',fail:'blocked'};
+  document.getElementById('root').innerHTML=`
+<div class="wrap">
+  <div class="panel">
+    <div class="panel-hdr">C++ code — highlighted line(s) executing</div>
+    <div class="code-body">${mkCode(s.hl,s.hltype)}</div>
+  </div>
+  <div class="right-col">
+    <div class="panel">
+      <div class="panel-hdr">Board state</div>
+      <div class="board-panel">${mkBoard(s.board)}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">What is happening now</div>
+      <div class="info-panel">
+        <div class="badge ${btypes[s.badge]||'try'}">${blabels[s.badge]||s.badge}</div>
+        <div class="info-line">${s.info}</div>
+        ${mkChecks(s.checks)}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">Call stack (recursion depth)</div>
+      <div class="call-stack">${mkStack(s.stack)}</div>
+    </div>
+  </div>
+</div>
+<div class="panel" style="margin-top:10px">
+  <div class="vars-row">
+    ${Object.entries(s.vars).map(([k,v])=>`<span class="var-chip"><b>${k}</b> = ${v}</span>`).join('')}
+    <span class="var-chip" style="margin-left:auto;color:var(--color-text-secondary);font-size:10px">step ${cur+1}/${STEPS.length}</span>
+  </div>
+  <div class="dots" id="dots"></div>
+  <div class="nav">
+    <button id="pb" onclick="go(-1)" ${cur===0?'disabled':''}>&#8592; Prev</button>
+    <button id="nb" onclick="go(1)" ${cur===STEPS.length-1?'disabled':''}>Next &#8594;</button>
+    <button onclick="go(-cur)">&#8617; Reset</button>
+    <span class="ctr">${s.title}</span>
+  </div>
+</div>`;
+  const db=document.getElementById('dots');
+  STEPS.forEach((st,i)=>{
+    const d=document.createElement('div');
+    d.className='dot'+(i<cur?' done'+(st.badge==='bt'?' bt-d':st.badge==='sol'?' ok-d':''):'')+(i===cur?' cur':'');
+    d.title=`${i+1}: ${st.title}`;
+    d.onclick=()=>{cur=i;render();};
+    db.appendChild(d);
+  });
+}
+
+function go(d){
+  const n=cur+d;
+  if(n<0||n>=STEPS.length)return;
+  cur=n;render();
+  document.getElementById('root').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight')go(1);
+  if(e.key==='ArrowLeft')go(-1);
+});
+
+render();
+</script>
