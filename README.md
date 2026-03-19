@@ -2466,3 +2466,204 @@ del_node is guaranteed non-last      →  prev will always be set before the del
 ```
 
 ---
+### 23. N-Queens
+
+**Problem:** Place `n` queens on an `n × n` chessboard such that no two queens attack each other (no two queens share the same row, column, or diagonal). Return all distinct solutions.
+
+**Example:**
+```
+Input: n = 4
+Output:
+[".Q..",    ["..Q.",
+ "...Q",     "Q...",
+ "Q...",     "...Q",
+ "..Q."]     ".Q.."]
+```
+
+**Approach (Backtracking):**
+1. Place queens **row by row** — since only one queen can exist per row, we try each column in the current row.
+2. Before placing, check if the position is **safe** using `isSafePlace()`.
+3. If safe, place the queen (`'Q'`) and recurse to the next row.
+4. After returning, **backtrack** by removing the queen (`'.'`) to explore other options.
+5. **Base case:** when `row == n`, all queens are placed — add the board to the result.
+
+**Safety Check (`isSafePlace`):**
+Only need to check **upward directions** since we fill row by row (no queen below yet):
+- **Vertical (↑):** scan the same column in all rows above
+- **Left upper diagonal (↖):** scan diagonally up-left
+- **Right upper diagonal (↗):** scan diagonally up-right
+
+**Step-by-step dry run (n = 4):**
+```
+Row 0: Try col 0 → safe → place Q
+  Row 1: Try col 0 → blocked (same col) | col 1 → blocked (diagonal) | col 2 → safe → place Q
+    Row 2: All columns blocked → backtrack
+  Row 1: Try col 3 → safe → place Q
+    Row 2: Try col 1 → safe → place Q
+      Row 3: Try col 2 → blocked | col 3 → blocked | col 0 → blocked | col ... → all blocked → backtrack
+    Row 2: Backtrack
+  Row 1: Backtrack
+Row 0: Try col 1 → safe → place Q
+  ... (finds first valid solution)
+```
+
+**Code:**
+```cpp
+bool isSafePlace(int row, int col, vector<string>& board) {
+    int i, j, n = board.size();
+
+    // Check vertical (same column, rows above)
+    for (i = row - 1; i >= 0; i--) {
+        if (board[i][col] == 'Q') {
+            return false;
+        }
+    }
+
+    // Check left upper diagonal (↖)
+    for (i = row - 1, j = col - 1; i >= 0 && j >= 0; i--, j--) {
+        if (board[i][j] == 'Q') {
+            return false;
+        }
+    }
+
+    // Check right upper diagonal (↗)
+    for (i = row - 1, j = col + 1; i >= 0 && j < n; i--, j++) {
+        if (board[i][j] == 'Q') {
+            return false;
+        }
+    }
+    return true;
+}
+
+void placeNQueens(int row, int n, vector<vector<string>>& ans, vector<string>& board) {
+    // Base case: all rows filled → valid solution found
+    if (row == n) {
+        ans.push_back(board);
+        return;
+    }
+
+    for (int j = 0; j < n; j++) {
+        if (isSafePlace(row, j, board)) {
+            board[row][j] = 'Q';           // Place queen
+            placeNQueens(row + 1, n, ans, board);  // Recurse
+            board[row][j] = '.';           // Backtrack
+        }
+    }
+}
+
+vector<vector<string>> solveNQueens(int n) {
+    vector<vector<string>> ans;
+    vector<string> board(n, string(n, '.'));   // n×n board, all dots
+    placeNQueens(0, n, ans, board);
+    return ans;
+}
+```
+
+**Complexity:**
+- Time: $O(n!)$ — at most $n$ choices in row 0, $n-1$ in row 1, and so on
+- Space: $O(n^2)$ — board storage + $O(n)$ recursion stack depth
+
+**Key roles:**
+| Component | Role |
+|-----------|------|
+| `isSafePlace` | Validates a cell by checking column and both diagonals upward |
+| `placeNQueens` | Backtracking engine — places, recurses, and undoes |
+| `board[row][j] = '.'` | The backtrack step — restores board state after exploring a branch |
+
+**Why only check upward?**
+We process rows top-to-bottom, so all queens placed so far are in rows **above** the current row. Rows below are still empty — no need to check them.
+
+**Edge cases:**
+```
+n = 1  →  single cell, one solution: ["Q"]
+n = 2  →  no valid placement exists, returns []
+n = 3  →  no valid placement exists, returns []
+```
+
+---
+### 24. Permutations
+
+**Problem:** Given an array `nums` of distinct integers, return all possible permutations in any order.
+
+**Example:**
+```
+Input:  nums = [1, 2, 3]
+Output: [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]]
+```
+
+**Approach (Backtracking with Swapping):**
+1. Fix elements one position at a time using an `index` pointer.
+2. For each position `index`, swap it with every element at position `i` (where `i >= index`) — effectively choosing which element goes at `index`.
+3. Recurse on `index + 1` to fix the next position.
+4. **Backtrack** by swapping back, restoring the array to its original order before trying the next choice.
+5. **Base case:** when `index == nums.size()`, all positions are fixed — record the current permutation.
+
+**Key Insight:**
+The swap selects which element occupies position `index`. After the recursive call, undoing the swap ensures we explore all other possible selections for that position cleanly.
+
+**Step-by-step dry run (`[1, 2, 3]`):**
+```
+index=0: swap(0,0)→[1,2,3] → index=1: swap(1,1)→[1,2,3] → index=2: swap(2,2)→[1,2,3] → ✅ record [1,2,3]
+                                                             backtrack swap(2,2)→[1,2,3]
+                              swap(1,2)→[1,3,2] → index=2: swap(2,2)→[1,3,2] → ✅ record [1,3,2]
+                                                             backtrack swap(2,2)→[1,3,2]
+                              backtrack swap(1,2)→[1,2,3]
+         backtrack swap(0,0)→[1,2,3]
+
+index=0: swap(0,1)→[2,1,3] → index=1: swap(1,1)→[2,1,3] → ✅ record [2,1,3]
+                              swap(1,2)→[2,3,1] → ✅ record [2,3,1]
+                              backtrack → [2,1,3]
+         backtrack swap(0,1)→[1,2,3]
+
+index=0: swap(0,2)→[3,2,1] → index=1: swap(1,1)→[3,2,1] → ✅ record [3,2,1]
+                              swap(1,2)→[3,1,2] → ✅ record [3,1,2]
+                              backtrack → [3,2,1]
+         backtrack swap(0,2)→[1,2,3]
+```
+
+**Code:**
+```cpp
+void permutations(int index, vector<int>& nums, vector<vector<int>>& ans) {
+    // Base case: all positions fixed → record this permutation
+    if (index == nums.size()) {
+        ans.push_back(nums);
+        return;
+    }
+
+    // Try placing each remaining element at position 'index'
+    for (int i = index; i < nums.size(); i++) {
+        swap(nums[index], nums[i]);          // Choose: put nums[i] at position index
+        permutations(index + 1, nums, ans);  // Recurse: fix the next position
+        swap(nums[index], nums[i]);          // Backtrack: undo swap, restore array
+    }
+}
+
+vector<vector<int>> permute(vector<int>& nums) {
+    vector<vector<int>> ans;
+    permutations(0, nums, ans);
+    return ans;
+}
+```
+
+**Complexity:**
+- Time: $O(n \times n!)$ — there are $n!$ permutations, each taking $O(n)$ to copy into the result
+- Space: $O(n)$ — recursion stack depth (in-place swapping, no extra array needed)
+
+**Key roles:**
+| Component | Role |
+|-----------|------|
+| `index` | The position currently being filled; elements to its left are already fixed |
+| `swap(nums[index], nums[i])` | Selects which element occupies position `index` |
+| Second `swap(nums[index], nums[i])` | Backtrack — restores the array for the next iteration |
+| Base case `index == nums.size()` | All positions filled; snapshot the current arrangement |
+
+**Why start the loop at `i = index` (not 0)?**
+Elements before `index` are already placed in earlier recursive calls. Starting at `index` ensures we only consider elements that haven't been fixed yet.
+
+**Edge cases:**
+```
+nums = []   →  one empty permutation: [[]]
+nums = [1]  →  one permutation: [[1]]
+```
+
+---

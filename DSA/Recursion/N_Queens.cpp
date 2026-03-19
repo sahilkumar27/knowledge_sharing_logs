@@ -6,27 +6,20 @@ using namespace std;
 class Solution {
 public:
     bool isSafe(vector<string>& board, int row, int col, int n) {
-
-        // horizontal (row where we want to place the queen)
-        for (int j = 0; j < n; j++) {
-            if (board[row][j] == 'Q')
-                return false;
-        }
-
         // vertical (column where we want to place the queen)
-        for (int i = 0; i < n; i++) {
+        for (int i = row-1; i >= 0; i--) {
             if (board[i][col] == 'Q')
                 return false;
         }
 
-        // left diagonal (top-left to bottom-right)
-        for (int i = row, j = col; i >= 0 && j >= 0; i--, j--) {
+        // left upper diagonal (top-left to bottom-right)
+        for (int i = row-1, j = col-1; i >= 0 && j >= 0; i--, j--) {
             if (board[i][j] == 'Q')
                 return false;
         }
 
-        // right diagonal (top-right to bottom-left)
-        for (int i = row, j = col; i >= 0 && j < n; i--, j++) {
+        // right upper diagonal (top-right to bottom-left)
+        for (int i = row-1, j = col+1; i >= 0 && j < n; i--, j++) {
             if (board[i][j] == 'Q')
                 return false;
         }
