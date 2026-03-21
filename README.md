@@ -2930,7 +2930,7 @@ All nums2 < all nums1   →  second while copies remaining nums2 to front
 ```
 
 ---
-### 28. Search a 2D Matrix
+## 28. Search a 2D Matrix
 
 > **Algorithm:** Binary Search on rows + Binary Search inside that row
 > **Time Complexity:** O(log M + log N)  where M = rows, N = columns
@@ -3059,7 +3059,7 @@ public:
 ``` 
 ---
 
-## Full Dry Run
+### Full Dry Run
  
 ### Input
  
