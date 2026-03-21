@@ -67,3 +67,6 @@ public:
         return false;
     }
 };
+
+// Time Complexity: O(log(m) + log(n)) where m is the number of rows and n is the number of columns in the matrix.
+// Space Complexity: O(1) as we are using only constant extra space.
