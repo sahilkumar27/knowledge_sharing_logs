@@ -2667,3 +2667,160 @@ nums = [1]  →  one permutation: [[1]]
 ```
 
 ---
+### 25. Find the Duplicate Number
+
+**Problem:** Given an array `nums` of `n + 1` integers where each integer is in the range `[1, n]`, find the one repeated number. You must solve it without modifying the array and using only O(1) extra space.
+
+**Example:**
+```
+Input:  nums = [1, 3, 4, 2, 2]
+Output: 2
+
+Input:  nums = [3, 1, 3, 4, 2]
+Output: 3
+```
+
+**Approach (Floyd's Tortoise and Hare — Cycle Detection):**
+
+The key insight is to treat the array as a **linked list** where index `i` points to `nums[i]`. Since a duplicate exists, two indices point to the same value, forming a cycle.
+
+**Phase 1 — Detect the cycle:**
+1. Start both `slow` and `fast` at `nums[0]`.
+2. Move `slow` one step: `slow = nums[slow]`
+3. Move `fast` two steps: `fast = nums[nums[fast]]`
+4. Repeat until `slow == fast` — they meet inside the cycle.
+
+**Phase 2 — Find the cycle entrance (= duplicate):**
+1. Reset `slow` to `nums[0]`, keep `fast` where it is.
+2. Move both one step at a time.
+3. Where they meet is the duplicate number.
+
+**Step-by-step dry run (`[1, 3, 4, 2, 2]`):**
+```
+Array as implicit linked list:
+  index: 0 → 1 → 3 → 4 → 2 → 2 (cycle back to index 2)
+
+Phase 1 (detect cycle):
+  Start: slow=nums[0]=1, fast=nums[0]=1
+  Step 1: slow=nums[1]=3, fast=nums[nums[1]]=nums[3]=2
+  Step 2: slow=nums[3]=2, fast=nums[nums[2]]=nums[4]=2
+  slow == fast == 2  ✅ cycle detected
+
+Phase 2 (find entrance):
+  Reset slow=nums[0]=1, fast stays at 2
+  Step 1: slow=nums[1]=3, fast=nums[2]=4
+  Step 2: slow=nums[3]=2, fast=nums[4]=2
+  slow == fast == 2  ✅ duplicate found → return 2
+```
+
+**Code:**
+```cpp
+int findDuplicate(vector<int>& nums) {
+    int slow = nums[0], fast = nums[0];
+    // Floyd's Tortoise and Hare (Cycle Detection) algorithm
+    // loop detection
+    do {
+        slow = nums[slow];
+        fast = nums[nums[fast]];
+    } while (slow != fast);
+    slow = nums[0];
+    // finding the duplicate number
+    while (slow != fast) {
+        slow = nums[slow];
+        fast = nums[fast];
+    }
+    return slow;
+}
+```
+
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(1)$
+
+**Key roles:**
+| Pointer | Phase 1 Role | Phase 2 Role |
+|---------|-------------|-------------|
+| `slow` | Moves 1 step at a time | Reset to start; moves 1 step |
+| `fast` | Moves 2 steps at a time | Stays in cycle; moves 1 step |
+
+**Why does Phase 2 find the duplicate?**
+A standard result from Floyd's algorithm: after Phase 1, the distance from the start of the list to the cycle entrance equals the distance from the meeting point to the cycle entrance (travelling forward). So both pointers, moving at speed 1, converge at the entrance — which is the duplicate index.
+
+**Edge cases:**
+```
+All duplicates at start of cycle  →  algorithm still converges correctly
+Duplicate appears more than twice →  still one cycle entrance, same answer
+```
+
+---
+
+### 26. Majority Element
+
+**Problem:** Given an array `nums` of size `n`, return the element that appears **more than ⌊n/2⌋ times**. You may assume the majority element always exists.
+
+**Example:**
+```
+Input:  nums = [3, 2, 3]
+Output: 3
+
+Input:  nums = [2, 2, 1, 1, 1, 2, 2]
+Output: 2
+```
+
+**Approach (Boyer-Moore Voting Algorithm):**
+
+The key insight: if we cancel out every occurrence of the majority element with a different element, the majority element still survives because it appears more than all others combined.
+
+1. Maintain a `candidate` and a `count`.
+2. When `count` drops to 0, pick the current element as the new `candidate`.
+3. If the current element matches `candidate`, increment `count`; otherwise decrement it.
+4. The surviving `candidate` at the end is the majority element.
+
+**Step-by-step dry run (`[2, 2, 1, 1, 1, 2, 2]`):**
+```
+num=2: count=0 → candidate=2, count becomes 1
+num=2: matches candidate → count = 2
+num=1: no match         → count = 1
+num=1: no match         → count = 0
+num=1: count=0 → candidate=1, count becomes 1
+num=2: no match         → count = 0
+num=2: count=0 → candidate=2, count becomes 1
+
+Result: candidate = 2  ✅
+```
+
+**Code:**
+```cpp
+int findMajorityElement(vector<int>& nums) {
+    int count = 0, candidate = 0;
+    for (int num : nums) {
+        // Boyer-Moore Voting Algorithm
+        if (count == 0) {
+            candidate = num;
+        }
+        count += (num == candidate) ? 1 : -1;
+    }
+    return candidate;
+}
+```
+
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(1)$
+
+**Key roles:**
+| Variable | Role |
+|----------|------|
+| `candidate` | The current "surviving" element being tracked |
+| `count` | Net votes for the candidate; drops to 0 when cancelled out |
+
+**Why does this work?**
+The majority element appears more than `n/2` times, so even after pairing every one of its occurrences against a different element, it still has leftover votes. No other element can accumulate enough to outlast it.
+
+**Edge cases:**
+```
+nums = [1]          →  single element, returned immediately
+All same elements   →  count only ever increments, candidate never changes
+```
+
+---
