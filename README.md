@@ -2824,3 +2824,109 @@ All same elements   →  count only ever increments, candidate never changes
 ```
 
 ---
+### 27. Merge Sorted Arrays
+
+**Problem:** Given two sorted arrays `nums1` and `nums2` of sizes `m` and `n`, merge `nums2` into `nums1` in-place so that `nums1` becomes fully sorted. `nums1` has enough extra space at the end to hold `nums2`'s elements.
+
+**Example:**
+```
+Input:  nums1 = [1, 2, 3, 0, 0, 0], m = 3
+        nums2 = [2, 5, 6],           n = 3
+Output: nums1 = [1, 2, 2, 3, 5, 6]
+
+Input:  nums1 = [1], m = 1
+        nums2 = [],  n = 0
+Output: nums1 = [1]
+```
+
+**Approach (Three-Pointer — Fill from the Back):**
+
+The key insight: merging from the **front** would overwrite elements in `nums1` we still need. Instead, fill from the **back** — the largest merged element always goes into the last available slot, which is already empty (or used space we've already processed).
+
+1. Set `i = m-1` (last valid element in `nums1`), `j = n-1` (last element in `nums2`), `k = m+n-1` (last slot in `nums1`).
+2. Compare `nums1[i]` and `nums2[j]`; place the larger one at `nums1[k]` and move the corresponding pointer left.
+3. Decrement `k` each time.
+4. If `nums2` still has remaining elements after the main loop, copy them into the front of `nums1` — `nums1`'s leftover elements are already in place.
+
+**Step-by-step dry run:**
+```
+nums1 = [1, 2, 3, _, _, _]   nums2 = [2, 5, 6]
+         i=2              k=5          j=2
+
+Step 1: nums1[2]=3 < nums2[2]=6  →  nums1[5]=6,  j=1, k=4
+        [1, 2, 3, _, _, 6]
+
+Step 2: nums1[2]=3 < nums2[1]=5  →  nums1[4]=5,  j=0, k=3
+        [1, 2, 3, _, 5, 6]
+
+Step 3: nums1[2]=3 >= nums2[0]=2  →  nums1[3]=3, i=1, k=2
+        [1, 2, 3, 3, 5, 6]
+
+Step 4: nums1[1]=2 >= nums2[0]=2  →  nums1[2]=2, i=0, k=1
+        [1, 2, 2, 3, 5, 6]
+
+Step 5: nums1[0]=1 < nums2[0]=2 ... wait, j=0 and num2[0]=2
+        nums1[1]=2 was already placed; i=0, j=0 still
+        nums1[0]=1 < nums2[0]=2  → nums1[1]=2... 
+
+Clean trace:
+i=2,j=2,k=5: 3 vs 6  → place 6  → [1,2,3,_,_,6],  j=1,k=4
+i=2,j=1,k=4: 3 vs 5  → place 5  → [1,2,3,_,5,6],  j=0,k=3
+i=2,j=0,k=3: 3 vs 2  → place 3  → [1,2,3,3,5,6],  i=1,k=2
+i=1,j=0,k=2: 2 vs 2  → place 2  → [1,2,2,3,5,6],  i=0,k=1
+i=0,j=-1: j loop ends (nums2 exhausted)
+nums1[0]=1 already in correct position ✅
+
+Result: [1, 2, 2, 3, 5, 6]
+```
+
+**Code:**
+```cpp
+void mergeSortedArrays(vector<int>& nums1, vector<int>& nums2, int m, int n) {
+    int i = m - 1, j = n - 1, k = m + n - 1;
+    while (i >= 0 && j >= 0) {
+        if (nums1[i] >= nums2[j]) {
+            nums1[k] = nums1[i];
+            i--;
+            k--;
+        } else {
+            nums1[k] = nums2[j];
+            j--;
+            k--;
+        }
+    }
+    // Copy any remaining elements from nums2
+    while (j >= 0) {
+        nums1[k] = nums2[j];
+        j--;
+        k--;
+    }
+}
+```
+
+**Complexity:**
+- Time: $O(m + n)$ — each element is visited exactly once
+- Space: $O(1)$ — merging is done in-place within `nums1`
+
+**Key roles:**
+| Pointer | Role |
+|---------|------|
+| `i` | Scans `nums1`'s valid elements from right to left |
+| `j` | Scans `nums2` from right to left |
+| `k` | Write position in `nums1`; always moves left after each placement |
+
+**Why fill from the back?**
+Filling from the front would overwrite elements in `nums1` before we've compared them. Starting at the back guarantees every write goes into a slot that's either empty padding or already been placed — no data is ever lost.
+
+**Why only handle leftover `nums2` elements?**
+If `j < 0`, all of `nums2` has been placed. Any remaining `nums1` elements (`i >= 0`) are already sitting in their correct positions at the front of `nums1` — no extra work needed.
+
+**Edge cases:**
+```
+nums2 is empty (n=0)    →  nothing to do, nums1 unchanged
+nums1 is empty (m=0)    →  second while loop copies all of nums2
+All nums2 > all nums1   →  nums2 fills the back; second while never runs
+All nums2 < all nums1   →  second while copies remaining nums2 to front
+```
+
+---
