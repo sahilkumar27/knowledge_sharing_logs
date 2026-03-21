@@ -2930,3 +2930,746 @@ All nums2 < all nums1   →  second while copies remaining nums2 to front
 ```
 
 ---
+### 28. Search a 2D Matrix
+
+> **Algorithm:** Binary Search on rows + Binary Search inside that row
+> **Time Complexity:** O(log M + log N)  where M = rows, N = columns
+> **Space Complexity:** O(1)
+ 
+---
+ 
+## The Problem
+ 
+Given a **row-wise sorted** 2D matrix (each row sorted independently), find if a `target` value exists.
+ 
+```
+Input matrix (3 x 4):
+      col0  col1  col2  col3
+row0 [  1    3    5    7  ]
+row1 [ 10   11   16   20  ]
+row2 [ 23   30   34   60  ]
+ 
+target = 3
+Output: true
+```
+ 
+---
+ 
+##  Intuition: How the Algorithm Works
+ 
+```
+TWO-PHASE BINARY SEARCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 
+PHASE 1 — searchMatrix()
+Binary search across ROWS to find which row could hold the target.
+ 
+For each mid row, check:
+  mat[mid][0] <= target <= mat[mid][n-1]
+               |
+    YES → target could be in this row → go to Phase 2
+    NO  →
+         target > mat[mid][n-1]  → go DOWN (startRow = mid+1)
+         target < mat[mid][0]    → go UP   (endRow   = mid-1)
+ 
+PHASE 2 — SearchInRow()
+Standard binary search INSIDE the identified row.
+ 
+  target == mat[row][mid]  → FOUND   → return true
+  target >  mat[row][mid]  → go right (start = mid+1)
+  target <  mat[row][mid]  → go left  (end   = mid-1)
+ 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+ 
+---
+ 
+## Code:
+ 
+```cpp
+class Solution {
+public:
+ 
+    // Binary search inside a specific row
+    bool SearchInRow(vector<vector<int>> &mat, int target, int row)
+    {
+        int n = mat[0].size();       // number of columns
+ 
+        int start = 0, end = n - 1;
+ 
+        while (start <= end)
+        {
+            int mid = start + (end - start) / 2;  // safe mid — avoids overflow
+ 
+            // target found
+            if (target == mat[row][mid])
+            {
+                return true;
+            }
+            // move right
+            else if (target > mat[row][mid])
+            {
+                start = mid + 1;
+            }
+            // move left
+            else
+            {
+                end = mid - 1;
+            }
+        }
+ 
+        // target not found in this row
+        return false;
+    }
+ 
+ 
+    // Main function: binary search on rows first
+    bool searchMatrix(vector<vector<int>> &mat, int target)
+    {
+        int n        = mat[0].size();        // number of columns
+        int startRow = 0;
+        int endRow   = mat.size() - 1;      // number of rows - 1
+ 
+        while (startRow <= endRow)
+        {
+            int mid = startRow + (endRow - startRow) / 2;
+ 
+            // Check if target lies within this row's range
+            if (target >= mat[mid][0] && target <= mat[mid][n - 1])
+            {
+                // apply binary search inside this row
+                return SearchInRow(mat, target, mid);
+            }
+            // target is in a lower row (larger values)
+            else if (target > mat[mid][n - 1])
+            {
+                startRow = mid + 1;
+            }
+            // target is in an upper row (smaller values)
+            else
+            {
+                endRow = mid - 1;
+            }
+        }
+ 
+        // target not found in any row
+        return false;
+    }
+};
+``` 
+---
+
+## Full Dry Run
+ 
+### Input
+ 
+```
+mat = [
+  [ 1,  3,  5,  7],    <- row 0
+  [10, 11, 16, 20],    <- row 1
+  [23, 30, 34, 60]     <- row 2
+]
+target = 3
+```
+ 
+---
+ 
+### Matrix at start (all rows in play)
+ 
+```
+      c0    c1    c2    c3
+r0  [  1  ][ 3  ][ 5  ][ 7  ]
+r1  [ 10  ][11  ][16  ][20  ]
+r2  [ 23  ][30  ][34  ][60  ]
+```
+ 
+---
+ 
+### PHASE 1 — searchMatrix() — finding the right row
+ 
+**Initial variables:**
+```
+n        = mat[0].size() = 4
+startRow = 0
+endRow   = mat.size() - 1 = 2
+```
+ 
+---
+ 
+#### searchMatrix — Iteration 1
+ 
+```
+startRow = 0,   endRow = 2
+while (0 <= 2) -> TRUE  -> enter loop
+ 
+mid = 0 + (2 - 0) / 2  =  1
+  -> examining ROW 1: [ 10  11  16  20 ]
+     mat[1][0]  = 10   (first element)
+     mat[1][3]  = 20   (last  element)
+ 
+if (target >= mat[1][0] && target <= mat[1][3])
+   3 >= 10  ->  FALSE  <- short-circuit, AND stops here
+ 
+else if (target > mat[1][n-1])
+   3 > 20  ->  FALSE
+ 
+else   <- this branch executes
+   endRow = mid - 1 = 1 - 1 = 0
+ 
+After iteration 1:
+  startRow = 0,   endRow = 0
+ 
+Matrix state — rows 1 and 2 eliminated:
+      c0    c1    c2    c3
+r0  [  1  ][ 3  ][ 5  ][ 7  ]   <- only row remaining
+r1  [ 10  ][11  ][16  ][20  ]   X eliminated
+r2  [ 23  ][30  ][34  ][60  ]   X eliminated
+```
+ 
+---
+ 
+#### searchMatrix — Iteration 2
+ 
+```
+startRow = 0,   endRow = 0
+while (0 <= 0) -> TRUE  -> enter loop
+ 
+mid = 0 + (0 - 0) / 2  =  0
+  -> examining ROW 0: [  1   3   5   7 ]
+     mat[0][0]  = 1    (first element)
+     mat[0][3]  = 7    (last  element)
+ 
+if (target >= mat[0][0] && target <= mat[0][3])
+   3 >= 1  ->  TRUE
+   3 <= 7  ->  TRUE
+   Overall -> TRUE  (both conditions pass)
+ 
+-> Call SearchInRow(mat, target=3, row=0)
+```
+ 
+---
+ 
+### PHASE 2 — SearchInRow() — binary search inside row 0
+ 
+**Row 0:** `[ 1   3   5   7 ]`
+ 
+**Initial variables:**
+```
+n     = 4
+start = 0
+end   = n - 1 = 3
+```
+ 
+```
+      c0    c1    c2    c3
+r0  [  1  ][ 3  ][ 5  ][ 7  ]
+      ^s                 ^e
+```
+ 
+---
+ 
+#### SearchInRow — Iteration 1
+ 
+```
+start = 0,   end = 3
+while (0 <= 3) -> TRUE  -> enter loop
+ 
+mid = 0 + (3 - 0) / 2  =  1
+  -> mat[0][1] = 3
+ 
+if (target == mat[row][mid])
+   3 == 3  ->  TRUE!
+ 
+-> return true   <- FOUND!
+ 
+      c0    c1    c2    c3
+r0  [  1  ][ 3* ][ 5  ][ 7  ]
+             ^^^
+          mid=1  FOUND HERE at [row=0][col=1]
+```
+ 
+---
+ 
+### Why only 3 steps?
+ 
+```
+Brute force approach:
+  Scan every cell -> up to 3 x 4 = 12 comparisons
+ 
+This algorithm:
+  Phase 1: 2 comparisons to find the row
+  Phase 2: 1 comparison to find the element
+  Total  : 3 comparisons only!
+ 
+That is O(log 3 + log 4) = approximately 3 steps
+ 
+Scaling comparison:
+  1000 x 1000 matrix -> brute force : 1,000,000 steps
+                     -> this method : log(1000) + log(1000) = ~20 steps
+```
+ 
+---
+ 
+## Call Stack Trace
+ 
+```
+searchMatrix(mat, target=3)
+    |
+    | Iter 1: mid=1, row1=[10..20], 3 < 10 -> endRow = 0
+    | Iter 2: mid=0, row0=[1..7],   3 in range -> call SearchInRow
+    |
+    +-- SearchInRow(mat, target=3, row=0)
+            |
+            | Iter 1: mid=1, mat[0][1]=3, 3==3 -> return true
+            |
+            +-- return true
+    |
+    +-- return true  (searchMatrix returns this value up)
+ 
+Output: true
+```
+ 
+---
+ 
+## Complexity Analysis
+ 
+```
+Function          Operation                       Complexity
+──────────────────────────────────────────────────────────────
+searchMatrix()    Binary search over M rows       O(log M)
+SearchInRow()     Binary search over N columns    O(log N)
+──────────────────────────────────────────────────────────────
+TOTAL                                             O(log M + log N)
+Space                                             O(1)  <- no extra memory
+```
+ 
+---
+ 
+## Key Lines to Remember
+ 
+```cpp
+// KEY LINE 1 — safe mid (avoids integer overflow for large values)
+int mid = start + (end - start) / 2;
+// NOT: (start + end) / 2  <- can overflow
+ 
+// KEY LINE 2 — row range check (both conditions must pass)
+if (target >= mat[mid][0] && target <= mat[mid][n - 1])
+ 
+// KEY LINE 3 — go down (target is larger than this entire row)
+startRow = mid + 1;
+ 
+// KEY LINE 4 — go up (target is smaller than this entire row)
+endRow = mid - 1;
+ 
+// KEY LINE 5 — declare n in BOTH functions
+int n = mat[0].size();  // needed in searchMatrix AND SearchInRow
+```
+ 
+---
+
+## 29. Remove Nth Node From End of Linked List
+
+> **Algorithm:** Two-pass approach — calculate length, then delete target node
+> **Time Complexity:** O(L) where L = length of linked list
+> **Space Complexity:** O(1) — only constant extra space used
+
+---
+
+## The Problem
+
+Given the head of a linked list, remove the **Nth node from the end** and return the updated head.
+
+```
+Input:   1 -> 2 -> 3 -> 4 -> 5 -> NULL     N = 2
+                              ^
+                         2nd from end
+
+Output:  1 -> 2 -> 3 -> 5 -> NULL
+```
+
+---
+
+### Intuition
+
+```
+The key formula:
+
+  position from END   = N
+  position from START = length - N + 1   <- this is "target"
+
+Example: list of length 5,  N = 2
+  target = 5 - 2 + 1 = 4
+  So we need to delete node at position 4 (1-indexed from start)
+
+  pos:  1    2    3    4    5
+        1 -> 2 -> 3 -> 4 -> 5 -> NULL
+                        ^
+                   delete this (4th from start = 2nd from end)
+
+To delete node at position 4:
+  - Move curr to position 3  (one before target)
+  - curr->next = curr->next->next  (skip over node 4)
+  - delete the skipped node
+```
+
+---
+
+
+### Code:
+
+```cpp
+Node* removeNthFromEnd(Node* head, int N) {
+
+    // STEP 1: calculate length of linked list
+    int length = 0;
+    Node* curr = head;
+
+    while (curr != nullptr) {
+        length++;
+        curr = curr->next;
+    }
+
+    // STEP 2: find position from the START (1-indexed)
+    int target = length - N + 1;
+
+    // STEP 3: special case — if head itself needs to be removed
+    if (target == 1) {
+        Node* newHead = head->next;
+        delete head;
+        return newHead;
+    }
+
+    // STEP 4: move to node just BEFORE the target
+    curr = head;
+    for (int i = 1; i < target - 1; i++) {
+        curr = curr->next;
+    }
+
+    // STEP 5: unlink and delete the target node
+    Node* nodeToDelete = curr->next;
+    curr->next = curr->next->next;
+    delete nodeToDelete;
+
+    return head;
+}
+```
+
+---
+
+## Dry Run
+
+### Input
+
+```
+head = [1, 2, 3, 4, 5]     N = 2
+```
+
+### Linked list at start
+
+```
+[1] -> [2] -> [3] -> [4] -> [5] -> NULL
+ ^
+head
+```
+
+---
+
+### STEP 1 — Calculate Length
+
+**Initial state:** `length = 0`, `curr = head (node 1)`
+
+---
+
+#### Length loop — Iteration 1
+
+```
+curr = [1]   (not nullptr)
+  -> length++   ->   length = 1
+  -> curr = curr->next = [2]
+
+State: length=1,  curr->[2]
+```
+
+#### Length loop — Iteration 2
+
+```
+curr = [2]   (not nullptr)
+  -> length++   ->   length = 2
+  -> curr = curr->next = [3]
+
+State: length=2,  curr->[3]
+```
+
+#### Length loop — Iteration 3
+
+```
+curr = [3]   (not nullptr)
+  -> length++   ->   length = 3
+  -> curr = curr->next = [4]
+
+State: length=3,  curr->[4]
+```
+
+#### Length loop — Iteration 4
+
+```
+curr = [4]   (not nullptr)
+  -> length++   ->   length = 4
+  -> curr = curr->next = [5]
+
+State: length=4,  curr->[5]
+```
+
+#### Length loop — Iteration 5
+
+```
+curr = [5]   (not nullptr)
+  -> length++   ->   length = 5
+  -> curr = curr->next = nullptr
+
+State: length=5,  curr->nullptr
+```
+
+#### Length loop — Check condition
+
+```
+curr = nullptr   -> while condition FALSE -> exit loop
+
+Final: length = 5
+```
+
+---
+
+### STEP 2 — Calculate Target Position
+
+```
+target = length - N + 1
+       = 5      - 2 + 1
+       = 4
+
+So we must delete node at position 4 from the start.
+
+Verify:
+  pos:  1    2    3    4    5
+        1 -> 2 -> 3 -> 4 -> 5 -> NULL
+                        ^
+                  position 4 from start
+                  = position 2 from end  <- matches N=2  CORRECT
+```
+
+---
+
+### STEP 3 — Head Check
+
+```
+Is target == 1?
+   4 == 1  -> FALSE
+
+Head does NOT need to be removed. Continue normally.
+```
+
+---
+
+### STEP 4 — Move to Node Before Target
+
+**Goal:** reach position `target - 1 = 4 - 1 = 3`
+**Loop:** `for (int i = 1; i < target - 1; i++)` = `for (i = 1; i < 3; i++)`
+
+**Initial state:** `curr = head = node[1]`  (curr is at position 1)
+
+```
+[1] -> [2] -> [3] -> [4] -> [5] -> NULL
+ ^
+curr (position 1)
+```
+
+#### for loop — i = 1   (condition: 1 < 3  -> TRUE)
+
+```
+curr = curr->next = [2]   -> curr moves to position 2
+i++  -> i = 2
+
+[1] -> [2] -> [3] -> [4] -> [5] -> NULL
+        ^
+       curr (position 2)
+```
+
+#### for loop — i = 2   (condition: 2 < 3  -> TRUE)
+
+```
+curr = curr->next = [3]   -> curr moves to position 3
+i++  -> i = 3
+
+[1] -> [2] -> [3] -> [4] -> [5] -> NULL
+               ^
+              curr (position 3)
+```
+
+#### for loop — i = 3   (condition: 3 < 3  -> FALSE -> exit loop)
+
+```
+curr is now at position 3  <- one node BEFORE target (position 4)
+```
+
+---
+
+### STEP 5 — Delete the Target Node
+
+**curr is at node[3]. Target is curr->next = node[4].**
+
+```
+Before deletion:
+[1] -> [2] -> [3] -> [4] -> [5] -> NULL
+               ^      ^
+              curr   nodeToDelete
+
+Step 5a: nodeToDelete = curr->next = node[4]
+Step 5b: curr->next   = curr->next->next = node[5]
+Step 5c: delete nodeToDelete  (free node[4] from memory)
+
+After deletion:
+[1] -> [2] -> [3] -> [5] -> NULL
+               ^      ^
+              curr   curr->next (now points to node[5])
+```
+
+**Pointer change in detail:**
+
+```
+BEFORE:
+  node[3]->next  =  node[4]
+  node[4]->next  =  node[5]
+
+AFTER:
+  node[3]->next  =  node[5]   <- skip over node[4]
+  node[4] deleted from memory
+```
+
+---
+
+### STEP 6 — Return Head
+
+```
+return head   (head still points to node[1], unchanged)
+
+Final list:
+[1] -> [2] -> [3] -> [5] -> NULL
+```
+
+---
+
+## Special Case — When N = Length (Remove Head)
+
+```
+Input: [1, 2, 3, 4, 5],  N = 5
+
+target = 5 - 5 + 1 = 1
+
+if (target == 1) <- TRUE
+  newHead = head->next = node[2]
+  delete head          (free node[1])
+  return newHead       (return node[2])
+
+Output: [2, 3, 4, 5]
+```
+
+---
+
+## Special Case — When N = 1 (Remove Tail)
+
+```
+Input: [1, 2, 3, 4, 5],  N = 1
+
+target = 5 - 1 + 1 = 5
+
+for loop: move curr to position 4 (node[4])
+  curr->next = curr->next->next = nullptr
+  delete node[5]
+
+Output: [1, 2, 3, 4]
+```
+
+---
+
+## Special Case — Single Node List
+
+```
+Input: [7],  N = 1
+
+length = 1
+target = 1 - 1 + 1 = 1
+
+if (target == 1) <- TRUE
+  newHead = head->next = nullptr
+  delete head
+  return nullptr
+
+Output: [] (empty list)
+```
+
+---
+
+## Complexity Analysis
+
+```
+STEP 1 — Length calculation loop
+  Visits every node once  ->  O(L)
+
+STEP 2 — Compute target
+  Single arithmetic operation  ->  O(1)
+
+STEP 3 — Head check
+  Single comparison  ->  O(1)
+
+STEP 4 — Move to target-1 position
+  At most L-1 steps  ->  O(L)
+
+STEP 5 — Delete node
+  Pointer reassignment  ->  O(1)
+
+Total Time : O(L) + O(L) = O(L)
+Total Space: O(1)  — only curr, length, target, nodeToDelete used
+```
+
+---
+
+## Formula to Remember
+
+```
+  +-----------------------------------------------+
+  |                                               |
+  |   target (from start) = length - N + 1       |
+  |                                               |
+  |   N = 1  ->  target = length   (last node)   |
+  |   N = L  ->  target = 1        (head node)   |
+  |                                               |
+  +-----------------------------------------------+
+
+  To delete node at position P:
+    - Move curr to position P-1
+    - curr->next = curr->next->next
+    - delete old curr->next
+```
+
+---
+
+## Why `i < target - 1` in the for loop?
+
+```
+for (int i = 1; i < target - 1; i++)
+
+curr starts at position 1.
+We want curr to stop at position (target - 1).
+Number of steps needed = (target - 1) - 1 = target - 2
+
+When i starts at 1 and increments until i < (target-1):
+  i goes: 1, 2, 3, ..., target-2   <- that is (target-2) iterations
+  curr advances (target-2) times
+  curr ends at position 1 + (target-2) = target - 1  CORRECT
+
+Example: target = 4
+  i goes: 1, 2   (stops when i reaches 3, since 3 < 3 is false)
+  curr moves 2 times: pos 1 -> pos 2 -> pos 3 = position 3 = target-1  CORRECT
+```
+
+---
