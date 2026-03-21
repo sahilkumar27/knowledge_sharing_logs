@@ -10,10 +10,10 @@ void getPrams(vector<int> &nums, int idx, vector<vector<int>> &ans)
 
     for (int i = idx; i < nums.size(); i++)
     {
-        swap(nums[idx], nums[i]);       // idx place => ith element choice
+        swap(nums[idx], nums[i]); // idx place => ith element choice
 
-        getPrams(nums, idx + 1, ans);       // Recusive calling
-        //backtrack, undo the swap so that we can swap the nums[index] with other index elements
+        getPrams(nums, idx + 1, ans); // Recusive calling
+        // backtrack, undo the swap so that we can swap the nums[index] with other index elements
         swap(nums[idx], nums[i]); // BackTracking
     }
 }

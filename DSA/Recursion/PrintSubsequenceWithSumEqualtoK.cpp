@@ -1,7 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-void printSubsequence(vector<int>& nums, int k, int ind, vector<int>& ans)
+void printSubsequence(vector<int> &nums, int k, int ind, vector<int> &ans)
 {
     // Base Case: if required sum achieved
     if (k == 0)
@@ -31,7 +31,7 @@ void printSubsequence(vector<int>& nums, int k, int ind, vector<int>& ans)
 
 int main()
 {
-    vector<int> nums = {1,2,1};
+    vector<int> nums = {1, 2, 1};
     int k = 2;
 
     vector<int> ans;
