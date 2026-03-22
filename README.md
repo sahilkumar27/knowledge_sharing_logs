@@ -3673,3 +3673,134 @@ Example: target = 4
 ```
 
 ---
+
+---
+
+### 30. Count Inversions in an Array
+
+**Problem:** Given an array of integers, count the number of inversions. An inversion is a pair `(i, j)` such that `i < j` but `arr[i] > arr[j]` — i.e., a larger element appears before a smaller one.
+
+**Example:**
+```
+Input:  arr = [2, 4, 1, 3, 5]
+Output: 3
+
+Explanation:
+  Inversion pairs: (2,1), (4,1), (4,3)
+  Indices:         (0,2), (1,2), (1,3)
+```
+
+**Approach (Merge Sort):**
+
+The brute force approach checks every pair — O(n²). Instead, we piggyback on Merge Sort to count inversions in O(n log n).
+
+**Key Insight:** During the merge step, when we pick an element from the **right** subarray over an element from the **left** subarray, every remaining element in the left subarray forms an inversion with it. Since both halves are sorted, all `mid - left + 1` remaining elements on the left are greater than the current right element.
+
+**Step-by-step:**
+1. Recursively split the array into two halves.
+2. Count inversions in the left half.
+3. Count inversions in the right half.
+4. Merge the two sorted halves and count **cross inversions** (right element picked before left elements).
+5. Return the total count.
+
+**Visual walkthrough:**
+```
+arr = [2, 4, 1, 3, 5]
+
+Split:   [2, 4, 1]         [3, 5]
+Split:   [2, 4] [1]        [3] [5]
+Split:   [2] [4]
+
+Merge [2][4]  → sorted: [2, 4],  inversions: 0
+Merge [2,4][1]:
+  left=2, right=1  → pick 1, count += (mid - left + 1) = 2  (both 2 and 4 > 1)
+  pick 2, pick 4
+  sorted: [1, 2, 4],  inversions: 2
+
+Merge [3][5]  → sorted: [3, 5],  inversions: 0
+
+Merge [1,2,4][3,5]:
+  1<3 → pick 1
+  2<3 → pick 2
+  4>3 → pick 3, count += (mid - left + 1) = 1  (only 4 remains on left)
+  pick 4, pick 5
+  sorted: [1, 2, 3, 4, 5],  inversions: 1
+
+Total = 0 + 2 + 0 + 1 = 3  ✓
+```
+
+**Why `count += mid - left + 1`?**
+```
+left subarray (sorted):  [... arr[left], arr[left+1], ..., arr[mid]]
+                                  ^  all of these > arr[right]
+right element picked:    arr[right]
+
+Since the left half is sorted, if arr[left] > arr[right],
+then arr[left+1], arr[left+2], ..., arr[mid] are ALL > arr[right].
+That's (mid - left + 1) inversions in one shot.
+```
+
+**Code:**
+```cpp
+int merge(vector<int> &arr, int low, int high, int mid) {
+    int left = low, right = mid + 1, count = 0;
+    vector<int> temp;
+
+    while (left <= mid && right <= high) {
+        if (arr[left] <= arr[right]) {
+            temp.push_back(arr[left]);
+            left++;
+        } else {
+            // arr[right] < arr[left], and since left half is sorted,
+            // all elements from left..mid are > arr[right]
+            count += mid - left + 1;
+            temp.push_back(arr[right]);
+            right++;
+        }
+    }
+
+    while (left <= mid) {
+        temp.push_back(arr[left]);
+        left++;
+    }
+
+    while (right <= high) {
+        temp.push_back(arr[right]);
+        right++;
+    }
+
+    // Copy sorted temp back to original array
+    for (int i = low; i <= high; i++) {
+        arr[i] = temp[i - low];
+    }
+    return count;
+}
+
+int countInversion(vector<int> &arr, int low, int high) {
+    if (low >= high) return 0;   // base case: single element
+
+    int count = 0, mid = low + (high - low) / 2;
+    count += countInversion(arr, low, mid);       // left half
+    count += countInversion(arr, mid + 1, high);  // right half
+    count += merge(arr, low, high, mid);           // cross inversions
+    return count;
+}
+
+int inversionCount(vector<int> &arr) {
+    return countInversion(arr, 0, arr.size() - 1);
+}
+```
+
+**Complexity:**
+- Time: $O(n \log n)$ — same recurrence as Merge Sort: $T(n) = 2T(n/2) + O(n)$
+- Space: $O(n)$ — temporary array used during the merge step
+
+**Comparison with Brute Force:**
+| Approach | Time | Space |
+|---|---|---|
+| Brute Force (nested loops) | $O(n^2)$ | $O(1)$ |
+| Merge Sort | $O(n \log n)$ | $O(n)$ |
+
+**Key Takeaway:** Whenever you need to count pairs across two sorted halves, Merge Sort gives you the count for free during the merge step — without any extra comparisons.
+
+---
