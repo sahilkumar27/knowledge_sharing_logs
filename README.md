@@ -3804,3 +3804,162 @@ int inversionCount(vector<int> &arr) {
 **Key Takeaway:** Whenever you need to count pairs across two sorted halves, Merge Sort gives you the count for free during the merge step — without any extra comparisons.
 
 ---
+### 31. Merge Two Sorted Linked Lists
+
+**Problem:** Given the heads of two sorted linked lists, merge them into one sorted linked list and return its head.
+
+**Example:**
+```
+Input:  list1 = [1, 2, 4],  list2 = [1, 3, 4]
+Output: [1, 1, 2, 3, 4, 4]
+```
+
+**Approach:**
+1. Use a **dummy head node** to avoid edge-case handling for the result list's head.
+2. Maintain a `tail` pointer that always points to the last node of the merged list.
+3. Compare the front nodes of both lists — attach the smaller one to `tail` and advance that list's pointer.
+4. Once either list is exhausted, attach the remaining nodes of the other list directly (they're already sorted).
+5. Return `dummyNode->next` as the merged list head.
+
+**Why a dummy node?** It eliminates the need to special-case the very first node — `tail` always has somewhere to attach.
+
+**Visual Walkthrough:**
+```
+list1: [1] -> [2] -> [4]
+list2: [1] -> [3] -> [4]
+
+dummy -> ?
+tail = dummy
+
+Step 1: 1 == 1, pick list1's 1  →  dummy -> [1],  list1 = [2]->[4]
+Step 2: 2 > 1,  pick list2's 1  →  ... -> [1],    list2 = [3]->[4]
+Step 3: 2 < 3,  pick list1's 2  →  ... -> [2],    list1 = [4]
+Step 4: 4 > 3,  pick list2's 3  →  ... -> [3],    list2 = [4]
+Step 5: 4 == 4, pick list1's 4  →  ... -> [4],    list1 = NULL
+Step 6: list1 exhausted → attach remaining list2:  ... -> [4]
+
+Result: [1] -> [1] -> [2] -> [3] -> [4] -> [4]
+```
+
+**Code:**
+```cpp
+ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {
+    if(!list1) return list2;
+    if(!list2) return list1;   
+    ListNode* dummyNode = new ListNode(-1);
+    ListNode* tail = dummyNode;
+    while(list1 && list2){
+        if(list1->val < list2->val){
+            tail->next = list1;
+            list1 = list1->next;
+        } else {
+            tail->next = list2;
+            list2 = list2->next;
+        }
+        tail = tail->next;
+    }
+    if(list1){
+        tail->next = list1;
+    } else {
+        tail->next = list2;
+    }
+    return dummyNode->next;
+}
+```
+
+**Complexity:**
+- Time: $O(m + n)$ — each node is visited exactly once
+- Space: $O(1)$ — only the dummy node is allocated; no extra list is created
+
+---
+
+### 32. Intersection of Two Linked Lists
+
+**Problem:** Given the heads of two singly linked lists, return the node at which the two lists intersect. If the two lists have no intersection, return `NULL`.
+
+**Example:**
+```
+listA:       [4] -> [1] \
+                         [8] -> [4] -> [5] -> NULL
+listB: [5] -> [6] -> [1] /
+
+Output: node with value 8
+```
+
+**Approach (Length Difference):**
+1. Compute the length of both lists.
+2. Identify the longer list. Advance its pointer by `|lenA - lenB|` steps so both pointers are equidistant from the end.
+3. Walk both pointers forward together — the first node where they're equal (same address, not just same value) is the intersection.
+4. If they both reach `NULL` without meeting, there's no intersection.
+
+**Why this works:** If an intersection exists, both lists share a common suffix. By aligning their starts relative to the tail, both pointers reach the intersection node at the same step.
+
+**Visual Walkthrough:**
+```
+listA (len=5): [4] -> [1] -> [8] -> [4] -> [5]
+listB (len=6): [5] -> [6] -> [1] -> [8] -> [4] -> [5]
+                                     ^--- intersection
+
+diff = 6 - 5 = 1
+Advance tempA (longer) by 1:  tempA = listB's [6] node? 
+
+Wait — tempA is assigned to the LONGER list:
+  lenB(6) > lenA(5)  →  tempA = headB,  tempB = headA
+  diff = 1  →  advance tempA by 1
+
+tempA: [6] -> [1] -> [8] -> [4] -> [5]
+tempB: [4] -> [1] -> [8] -> [4] -> [5]
+              ^--- now equidistant from tail (4 steps each)
+
+Walk together:
+  [6] vs [4]  → not equal, advance
+  [1] vs [1]  → not equal (different nodes!), advance
+  [8] vs [8]  → SAME NODE (address match)  →  return this node ✓
+```
+
+**Code:**
+```cpp
+int lengthofLL(ListNode *head){
+    int count = 0;
+    while(head){
+        head = head->next;
+        count++;
+    }
+    return count;
+}
+
+ListNode* getIntersection(ListNode* headA, ListNode* headB) {
+    if(!headA || !headB) return NULL;
+    int lenA = lengthofLL(headA);
+    int lenB = lengthofLL(headB);
+    ListNode *tempA = NULL, *tempB = NULL;
+    if(lenA > lenB){
+        tempA = headA;
+        tempB = headB;
+    } else {
+        tempA = headB;
+        tempB = headA;
+    }
+    int diff = abs(lenA - lenB);
+    while(diff--){
+        tempA = tempA->next;
+    }
+    while(tempA && tempB){
+        if(tempA == tempB){
+            return tempA;
+        }
+        tempA = tempA->next;
+        tempB = tempB->next;
+    }
+    return NULL;
+}
+```
+
+**Complexity:**
+- Time: $O(m + n)$ — two length passes + one alignment pass, all linear
+- Space: $O(1)$ — only pointer variables used
+
+**Alternative — Two Pointer trick (no length needed):**
+> Switch each pointer to the other list's head once it hits `NULL`. Both pointers then travel `m + n` total steps and meet at the intersection (or both reach `NULL` if no intersection exists). Same time complexity, slightly simpler code.
+
+---
