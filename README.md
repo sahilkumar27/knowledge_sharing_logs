@@ -3963,3 +3963,228 @@ ListNode* getIntersection(ListNode* headA, ListNode* headB) {
 > Switch each pointer to the other list's head once it hits `NULL`. Both pointers then travel `m + n` total steps and meet at the intersection (or both reach `NULL` if no intersection exists). Same time complexity, slightly simpler code.
 
 ---
+### 33. Power Function (Fast Exponentiation)
+
+**Problem:** Implement `pow(x, n)`, which calculates `x` raised to the power `n` (i.e., `x^n`). `n` can be negative.
+
+**Example:**
+```
+Input: x = 2.0, n = 10   →  Output: 1024.0
+Input: x = 2.0, n = -3   →  Output: 0.125
+```
+
+**Approach (Binary Exponentiation / Exponentiation by Squaring):**
+
+The key insight: instead of multiplying `x` by itself `n` times (O(n)), we can exploit the following:
+
+- If `n` is even: `x^n = (x^(n/2))^2`
+- If `n` is odd:  `x^n = (x^(n/2))^2 * x`
+
+This halves the problem at every step, giving us O(log n) multiplications.
+
+**Handling negative exponents:** `x^(-n) = (1/x)^n`, so we flip `x` to `1/x` and work with the positive exponent.
+
+**Why `long` for the exponent?** `INT_MIN` negated overflows a 32-bit int. Casting to `long` first avoids undefined behavior.
+
+**Step-by-step walkthrough:**
+```
+x = 2.0, n = 10
+
+helper(2.0, 10):
+  half = helper(2.0, 5)
+    half = helper(2.0, 2)
+      half = helper(2.0, 1)
+        half = helper(2.0, 0) = 1   (base case)
+        n=1 is odd  →  return 1*1*2.0 = 2.0
+      n=2 is even  →  return 2.0*2.0 = 4.0
+    n=5 is odd  →  return 4.0*4.0*2.0 = 32.0
+  n=10 is even  →  return 32.0*32.0 = 1024.0  ✓
+```
+
+**Code:**
+```cpp
+double helper(double x, long n){
+    // base case
+    if(n == 0){
+        return 1;
+    }
+
+    double half = helper(x, n/2);
+    if(n % 2 == 0){
+        return half * half;
+    }
+    return half * half * x;
+}
+
+double myPow(double x, int n) {
+    if(n == 0){
+        return 1;
+    }
+    long pow = n;
+    if(n < 0){
+        x = 1/x;       // flip base for negative exponent
+        pow = -pow;    // work with positive exponent
+    }
+    return helper(x, pow);
+}
+```
+
+**Complexity:**
+- Time: $O(\log n)$ — the exponent is halved at each recursive call
+- Space: $O(\log n)$ — recursion stack depth
+
+**Comparison with Brute Force:**
+| Approach | Time | Space |
+|---|---|---|
+| Brute Force (loop multiply) | $O(n)$ | $O(1)$ |
+| Binary Exponentiation | $O(\log n)$ | $O(\log n)$ |
+
+---
+
+### 34. Merge Intervals
+
+**Problem:** Given an array of intervals where `intervals[i] = [start_i, end_i]`, merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the intervals in the input.
+
+**Example:**
+```
+Input:  [[1,3], [2,6], [8,10], [15,18]]
+Output: [[1,6], [8,10], [15,18]]
+Explanation: [1,3] and [2,6] overlap → merged to [1,6]
+
+Input:  [[1,4], [4,5]]
+Output: [[1,5]]
+Explanation: [1,4] and [4,5] are considered overlapping (touching counts)
+```
+
+**Approach:**
+1. **Sort** intervals by their start time — this ensures any overlapping interval must be adjacent after sorting.
+2. Iterate through each interval:
+   - If `merged` is empty **or** the current interval starts after the last merged interval ends → no overlap, just push it.
+   - Otherwise → overlap detected; extend the end of the last merged interval to `max(current end, last merged end)`.
+3. Return `merged`.
+
+**Why sort first?** Without sorting, an interval far to the left could overlap with one already processed. Sorting guarantees we only ever need to compare with the last merged interval.
+
+**Visual Walkthrough:**
+```
+Input (sorted): [[1,3], [2,6], [8,10], [15,18]]
+
+Step 1: merged = []          → push [1,3]      merged = [[1,3]]
+Step 2: 2 <= 3 (overlap!)   → extend end to max(6,3)=6   merged = [[1,6]]
+Step 3: 8 > 6  (no overlap) → push [8,10]     merged = [[1,6],[8,10]]
+Step 4: 15 > 10 (no overlap)→ push [15,18]    merged = [[1,6],[8,10],[15,18]]
+```
+
+**Edge case — interval fully contained:**
+```
+[[1,10], [2,4]]  →  2 <= 10 (overlap), max(4,10)=10  →  [[1,10]]  ✓
+```
+
+**Code:**
+```cpp
+vector<vector<int>> merge(vector<vector<int>>& intervals) {
+    vector<vector<int>> merged;
+    sort(intervals.begin(), intervals.end());   // sort by start time
+    for(auto interval : intervals){
+        // No overlap: current starts after last merged interval ends
+        if(merged.empty() || interval[0] > merged.back()[1]){
+            merged.push_back(interval);
+        }
+        else{
+            // Overlap: extend the end of the last merged interval
+            merged.back()[1] = max(interval[1], merged.back()[1]);
+        }
+    }
+    return merged;
+}
+```
+
+**Complexity:**
+- Time: $O(n \log n)$ — dominated by the sort; the merge pass is $O(n)$
+- Space: $O(n)$ — output array (or $O(\log n)$ if only counting auxiliary space for sorting)
+
+**Key Takeaway:** Sorting transforms a potentially complex pairwise comparison problem into a single linear scan — you only ever need to look at the last interval you've added.
+
+---
+### 35. Combination Sum
+
+**Problem:** Given an array of **distinct** integers `candidates` and a `target`, return all unique combinations of candidates that sum to `target`. The same number may be used **unlimited times**. The answer may be returned in any order.
+
+**Example:**
+```
+Input:  candidates = [2, 3, 6, 7],  target = 7
+Output: [[2,2,3], [7]]
+
+Input:  candidates = [2, 3, 5],  target = 8
+Output: [[2,2,2,2], [2,3,3], [3,5]]
+```
+
+**Approach (Backtracking):**
+
+At every index we have two choices:
+1. **Take** `candidates[ind]` — subtract it from target and stay at the same index (we can reuse it).
+2. **Not take** — move to the next index with the target unchanged.
+
+We prune early when:
+- `target < 0` — current path already overshoots
+- `ind >= size` — no more candidates to consider
+- `target >= candidates[ind]` guard before taking — avoids a wasted recursive call that would immediately hit `target < 0`
+
+**Recursion Tree for `[2,3,6,7]`, target = 7:**
+```
+                        (ind=0, target=7)
+                       /                \
+          take 2 (ind=0, t=5)     skip (ind=1, t=7)
+           /           \                    \
+  take 2 (0,t=3)  skip (1,t=5)        take 3 (1,t=4)  ...
+   /        \                           /        \
+(0,t=1)  (1,t=3)                   (1,t=1)    (2,t=4)
+   |        / \                        |
+(0,t=-1) (1,t=0)✓ (2,t=3)          skip→(2,t=1)→...
+ prune   [2,2,3]
+                                              ...eventually (3,t=0)✓ → [7]
+```
+
+**Why stay at the same index when taking?**
+Because each candidate can be used multiple times. Moving to `ind+1` after taking would prevent reuse.
+
+**Code:**
+```cpp
+void helper(int ind, vector<int>& candidates, int target,
+            vector<vector<int>>& ans, vector<int>& current, int size) {
+    // base case
+    if (target < 0 || ind >= size) {
+        return;
+    }
+    if (target == 0) {
+        ans.push_back(current);
+        return;
+    }
+
+    // take (only if current candidate doesn't overshoot)
+    if (target >= candidates[ind]) {
+        current.push_back(candidates[ind]);
+        helper(ind, candidates, target - candidates[ind], ans, current, size);  // stay at same index
+        current.pop_back();  // backtrack
+    }
+
+    // not take — move to next candidate
+    helper(ind + 1, candidates, target, ans, current, size);
+}
+
+vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+    int ind = 0, n = candidates.size();
+    vector<vector<int>> ans;
+    vector<int> current;
+    helper(ind, candidates, target, ans, current, n);
+    return ans;
+}
+```
+
+**Complexity:**
+- Time: $O(2^{t/m})$ where $t$ = target and $m$ = smallest candidate — the recursion tree depth is at most $t/m$ and branches two ways at each node
+- Space: $O(t/m)$ — maximum recursion depth (not counting output)
+
+**Key Takeaway:** The trick of **not incrementing the index on "take"** is what enables unlimited reuse of a candidate — a subtle but important difference from standard subset/combination problems where you always move forward.
+
+---
