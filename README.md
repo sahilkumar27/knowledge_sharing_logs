@@ -3267,7 +3267,7 @@ int n = mat[0].size();  // needed in searchMatrix AND SearchInRow
  
 ---
 
-## 29. Remove Nth Node From End of Linked List
+# 29. Remove Nth Node From End of Linked List
 
 > **Algorithm:** Two-pass approach — calculate length, then delete target node
 > **Time Complexity:** O(L) where L = length of linked list
@@ -3676,7 +3676,7 @@ Example: target = 4
 
 ---
 
-### 30. Count Inversions in an Array
+# 30. Count Inversions in an Array
 
 **Problem:** Given an array of integers, count the number of inversions. An inversion is a pair `(i, j)` such that `i < j` but `arr[i] > arr[j]` — i.e., a larger element appears before a smaller one.
 
@@ -3804,7 +3804,7 @@ int inversionCount(vector<int> &arr) {
 **Key Takeaway:** Whenever you need to count pairs across two sorted halves, Merge Sort gives you the count for free during the merge step — without any extra comparisons.
 
 ---
-### 31. Merge Two Sorted Linked Lists
+# 31. Merge Two Sorted Linked Lists
 
 **Problem:** Given the heads of two sorted linked lists, merge them into one sorted linked list and return its head.
 
@@ -3963,7 +3963,7 @@ ListNode* getIntersection(ListNode* headA, ListNode* headB) {
 > Switch each pointer to the other list's head once it hits `NULL`. Both pointers then travel `m + n` total steps and meet at the intersection (or both reach `NULL` if no intersection exists). Same time complexity, slightly simpler code.
 
 ---
-### 33. Power Function (x, n) — Fast Exponentiation (Binary Exponentiation)
+# 33. Power Function (x, n) — Fast Exponentiation (Binary Exponentiation)
 
 > **Algorithm:** Divide and Conquer — halve the exponent at every step
 > **Time Complexity:** O(log n) — exponent halves each recursive call
@@ -4424,7 +4424,7 @@ else return half * half * num;
 ##### Notes: prepared for teaching — dry runs for n=10 (positive), n=-3 (negative), n=0 and n=1 (edge cases), with full recursion tree traced top to bottom and bottom to top.
 ---
 
-### 34. Merge Intervals
+# 34. Merge Intervals
 
 **Problem:** Given an array of intervals where `intervals[i] = [start_i, end_i]`, merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the intervals in the input.
 
@@ -4572,7 +4572,7 @@ vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
 
 ---
 
-## 36. Find Missing and Repeating Numbers
+# 36. Find Missing and Repeating Numbers
 
 > **Problem:** In an array of size N containing numbers from 1 to N, one number appears twice (repeating) and one number is missing. Find both.
 > **Three Approaches:** Brute Force → Hashing → Math (each better than the last)
@@ -5148,7 +5148,7 @@ y (missing)   =  x - val1
 
 ---
 
-### 37. Majority Element II — Elements Appearing More Than n/3 Times
+# 37. Majority Element II — Elements Appearing More Than n/3 Times
 
 > **Algorithm:** HashMap frequency count
 > **Time Complexity:** O(n) — single pass to build map + one pass over map
