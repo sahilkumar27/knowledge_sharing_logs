@@ -3963,82 +3963,465 @@ ListNode* getIntersection(ListNode* headA, ListNode* headB) {
 > Switch each pointer to the other list's head once it hits `NULL`. Both pointers then travel `m + n` total steps and meet at the intersection (or both reach `NULL` if no intersection exists). Same time complexity, slightly simpler code.
 
 ---
-### 33. Power Function (Fast Exponentiation)
+### 33. Power Function (x, n) — Fast Exponentiation (Binary Exponentiation)
 
-**Problem:** Implement `pow(x, n)`, which calculates `x` raised to the power `n` (i.e., `x^n`). `n` can be negative.
+> **Algorithm:** Divide and Conquer — halve the exponent at every step
+> **Time Complexity:** O(log n) — exponent halves each recursive call
+> **Space Complexity:** O(log n) — recursion call stack depth
 
-**Example:**
+---
+
+## The Problem
+
+Compute `x` raised to the power `n` (i.e., `x^n`) efficiently.
+
 ```
-Input: x = 2.0, n = 10   →  Output: 1024.0
-Input: x = 2.0, n = -3   →  Output: 0.125
-```
+Naive approach:  multiply x by itself n times  ->  O(n)
+This approach:   halve n at every step          ->  O(log n)
 
-**Approach (Binary Exponentiation / Exponentiation by Squaring):**
-
-The key insight: instead of multiplying `x` by itself `n` times (O(n)), we can exploit the following:
-
-- If `n` is even: `x^n = (x^(n/2))^2`
-- If `n` is odd:  `x^n = (x^(n/2))^2 * x`
-
-This halves the problem at every step, giving us O(log n) multiplications.
-
-**Handling negative exponents:** `x^(-n) = (1/x)^n`, so we flip `x` to `1/x` and work with the positive exponent.
-
-**Why `long` for the exponent?** `INT_MIN` negated overflows a 32-bit int. Casting to `long` first avoids undefined behavior.
-
-**Step-by-step walkthrough:**
-```
-x = 2.0, n = 10
-
-helper(2.0, 10):
-  half = helper(2.0, 5)
-    half = helper(2.0, 2)
-      half = helper(2.0, 1)
-        half = helper(2.0, 0) = 1   (base case)
-        n=1 is odd  →  return 1*1*2.0 = 2.0
-      n=2 is even  →  return 2.0*2.0 = 4.0
-    n=5 is odd  →  return 4.0*4.0*2.0 = 32.0
-  n=10 is even  →  return 32.0*32.0 = 1024.0  ✓
+Example: x=2.0, n=10
+  Naive: 2*2*2*2*2*2*2*2*2*2  ->  10 multiplications
+  Fast:  2^10 -> 2^5 -> 2^2 -> 2^1 -> 2^0  ->  4 multiplications only
 ```
 
-**Code:**
+---
+
+## The Code
+
 ```cpp
-double helper(double x, long n){
-    // base case
-    if(n == 0){
+double myPow(double x, long long n) {
+
+    // handle negative exponent
+    // x^(-n) = (1/x)^n
+    if (n < 0) {
+        x = 1.0 / x;
+        n = -n;
+    }
+
+    return helper(x, n);
+}
+
+double helper(double num, long long n) {
+
+    // base case: anything^0 = 1
+    if (n == 0) {
         return 1;
     }
 
-    double half = helper(x, n/2);
-    if(n % 2 == 0){
+    // recursive call with HALF the exponent
+    double half = helper(num, n / 2);
+
+    // even exponent: num^n = (num^(n/2))^2
+    if (n % 2 == 0) {
         return half * half;
     }
-    return half * half * x;
-}
-
-double myPow(double x, int n) {
-    if(n == 0){
-        return 1;
+    // odd exponent: num^n = (num^(n/2))^2 * num
+    else {
+        return half * half * num;
     }
-    long pow = n;
-    if(n < 0){
-        x = 1/x;       // flip base for negative exponent
-        pow = -pow;    // work with positive exponent
-    }
-    return helper(x, pow);
 }
 ```
 
-**Complexity:**
-- Time: $O(\log n)$ — the exponent is halved at each recursive call
-- Space: $O(\log n)$ — recursion stack depth
+---
 
-**Comparison with Brute Force:**
-| Approach | Time | Space |
-|---|---|---|
-| Brute Force (loop multiply) | $O(n)$ | $O(1)$ |
-| Binary Exponentiation | $O(\log n)$ | $O(\log n)$ |
+## Core Insight — Why Halving Works
 
+```
+EVEN exponent:
+  num^n  =  num^(n/2)  *  num^(n/2)
+  2^10   =  2^5  *  2^5
+  just compute 2^5 ONCE, square the result
+
+ODD exponent:
+  num^n  =  num^(n/2)  *  num^(n/2)  *  num
+  2^11   =  2^5  *  2^5  *  2
+  (integer division: 11/2 = 5, remainder 1)
+
+NEGATIVE exponent:
+  x^(-n) =  (1/x)^n
+  2^(-3) =  (0.5)^3  =  0.125
+
+So we flip x to 1/x and make n positive, then call helper normally.
+```
+
+---
+
+## Recursion Tree Pattern
+
+```
+helper(x, n)
+    |
+    +-- helper(x, n/2)
+            |
+            +-- helper(x, n/4)
+                    |
+                    +-- helper(x, n/8)
+                            |
+                            ...
+                            |
+                            +-- helper(x, 0) = 1  <- base case
+
+Depth of tree = log2(n)
+Each level does ONE multiplication (or two for odd)
+Total multiplications = O(log n)
+```
+
+---
+
+## Dry Run 1 — Positive Exponent: `x = 2.0, n = 10`
+
+### myPow entry
+
+```
+n = 10  -> not < 0  -> no change
+x = 2.0,  n = 10
+Call helper(2.0, 10)
+```
+
+---
+
+### Call stack going DOWN (splitting n in half)
+
+```
+helper(2.0, 10)
+  n=10, n%2==0
+  calls helper(2.0, 10/2) = helper(2.0, 5)
+  |
+  +-- helper(2.0, 5)
+        n=5, n%2==1 (odd)
+        calls helper(2.0, 5/2) = helper(2.0, 2)
+        |
+        +-- helper(2.0, 2)
+              n=2, n%2==0 (even)
+              calls helper(2.0, 2/2) = helper(2.0, 1)
+              |
+              +-- helper(2.0, 1)
+                    n=1, n%2==1 (odd)
+                    calls helper(2.0, 1/2) = helper(2.0, 0)
+                    |
+                    +-- helper(2.0, 0)
+                          n==0  -> BASE CASE -> return 1
+```
+
+---
+
+### Call stack unwinding UP (computing results)
+
+#### helper(2.0, 0)
+
+```
+n == 0  ->  return 1
+```
+
+#### helper(2.0, 1)
+
+```
+half = helper(2.0, 0) = 1
+n=1, n%2 == 1  (ODD)
+return half * half * num
+     = 1    * 1    * 2.0
+     = 2.0
+```
+
+#### helper(2.0, 2)
+
+```
+half = helper(2.0, 1) = 2.0
+n=2, n%2 == 0  (EVEN)
+return half * half
+     = 2.0  * 2.0
+     = 4.0
+```
+
+#### helper(2.0, 5)
+
+```
+half = helper(2.0, 2) = 4.0
+n=5, n%2 == 1  (ODD)
+return half * half * num
+     = 4.0  * 4.0  * 2.0
+     = 32.0
+```
+
+#### helper(2.0, 10)
+
+```
+half = helper(2.0, 5) = 32.0
+n=10, n%2 == 0  (EVEN)
+return half * half
+     = 32.0 * 32.0
+     = 1024.0
+```
+
+### Final answer
+
+```
+myPow(2.0, 10) = 1024.0    (= 2^10 = 1024   CORRECT)
+```
+
+---
+
+### Dry Run 1 — Complete Summary Table
+
+| Call | n | n/2 | n%2 | half (returned from below) | return value |
+|------|---|-----|-----|----------------------------|--------------|
+| helper(2.0, 10) | 10 | 5 | 0 (even) | 32.0 | 32.0 * 32.0 = **1024.0** |
+| helper(2.0, 5) | 5 | 2 | 1 (odd) | 4.0 | 4.0 * 4.0 * 2.0 = **32.0** |
+| helper(2.0, 2) | 2 | 1 | 0 (even) | 2.0 | 2.0 * 2.0 = **4.0** |
+| helper(2.0, 1) | 1 | 0 | 1 (odd) | 1 | 1 * 1 * 2.0 = **2.0** |
+| helper(2.0, 0) | 0 | — | — | — | **1** (base case) |
+
+---
+
+## Dry Run 2 — Negative Exponent: `x = 2.0, n = -3`
+
+### myPow entry
+
+```
+n = -3  ->  n < 0  -> TRUE
+  x = 1.0 / 2.0  =  0.5
+  n = -(-3)       =  3
+
+Now call helper(0.5, 3)
+```
+
+---
+
+### Call stack going DOWN
+
+```
+helper(0.5, 3)
+  n=3, n%2==1 (odd)
+  calls helper(0.5, 3/2) = helper(0.5, 1)
+  |
+  +-- helper(0.5, 1)
+        n=1, n%2==1 (odd)
+        calls helper(0.5, 1/2) = helper(0.5, 0)
+        |
+        +-- helper(0.5, 0)
+              n==0  ->  BASE CASE  ->  return 1
+```
+
+---
+
+### Call stack unwinding UP
+
+#### helper(0.5, 0)
+
+```
+n == 0  ->  return 1
+```
+
+#### helper(0.5, 1)
+
+```
+half = helper(0.5, 0) = 1
+n=1, n%2 == 1  (ODD)
+return half * half * num
+     = 1    * 1    * 0.5
+     = 0.5
+```
+
+#### helper(0.5, 3)
+
+```
+half = helper(0.5, 1) = 0.5
+n=3, n%2 == 1  (ODD)
+return half * half * num
+     = 0.5  * 0.5  * 0.5
+     = 0.125
+```
+
+### Final answer
+
+```
+myPow(2.0, -3) = 0.125    (= 1/(2^3) = 1/8 = 0.125   CORRECT)
+```
+
+---
+
+### Dry Run 2 — Complete Summary Table
+
+| Call | num | n | n%2 | half | return value |
+|------|-----|---|-----|------|--------------|
+| helper(0.5, 3) | 0.5 | 3 | 1 (odd) | 0.5 | 0.5 * 0.5 * 0.5 = **0.125** |
+| helper(0.5, 1) | 0.5 | 1 | 1 (odd) | 1 | 1 * 1 * 0.5 = **0.5** |
+| helper(0.5, 0) | 0.5 | 0 | — | — | **1** (base case) |
+
+---
+
+## Dry Run 3 — Power of 1: `x = 3.0, n = 1`
+
+```
+myPow: n=1, not negative, call helper(3.0, 1)
+
+helper(3.0, 1)
+  calls helper(3.0, 0) = 1   (base case)
+  half = 1
+  n=1, odd
+  return 1 * 1 * 3.0 = 3.0
+
+Answer: 3.0   CORRECT
+```
+
+---
+
+## Dry Run 4 — Zero Exponent: `x = 5.0, n = 0`
+
+```
+myPow: n=0, not negative, call helper(5.0, 0)
+
+helper(5.0, 0)
+  n == 0  ->  return 1
+
+Answer: 1.0   CORRECT  (any number to the power 0 = 1)
+```
+
+---
+
+## Visual: Recursion Tree for x=2.0, n=10
+
+```
+                    helper(2.0, 10)
+                          |
+                   n=10, even
+                   return 32*32 = 1024
+                          |
+                    helper(2.0, 5)
+                          |
+                   n=5, odd
+                   return 4*4*2 = 32
+                          |
+                    helper(2.0, 2)
+                          |
+                   n=2, even
+                   return 2*2 = 4
+                          |
+                    helper(2.0, 1)
+                          |
+                   n=1, odd
+                   return 1*1*2 = 2
+                          |
+                    helper(2.0, 0)
+                          |
+                   n=0, BASE CASE
+                   return 1
+
+Reading bottom up:
+  1  ->  2  ->  4  ->  32  ->  1024
+  ^0    ^1     ^2      ^5      ^10
+```
+
+---
+
+## Multiplication Count Comparison
+
+```
+Computing 2^10:
+
+Naive (loop):
+  2*2 = 4
+  4*2 = 8
+  8*2 = 16
+  16*2 = 32
+  32*2 = 64
+  64*2 = 128
+  128*2 = 256
+  256*2 = 512
+  512*2 = 1024
+  9 multiplications
+
+Fast exponentiation (this code):
+  helper(2,0)=1
+  helper(2,1): 1*1*2 = 2              [1 multiply]
+  helper(2,2): 2*2   = 4              [1 multiply]
+  helper(2,5): 4*4*2 = 32             [2 multiplies]
+  helper(2,10): 32*32 = 1024          [1 multiply]
+  Total: 5 multiplications only
+
+For n=1000: naive=999, fast=log2(1000)~10 multiplications
+```
+
+---
+
+## Why `long long` for n?
+
+```
+int  range: -2,147,483,648  to  2,147,483,647   (~2 * 10^9)
+long long:  -9.2 * 10^18    to  9.2 * 10^18
+
+When n is INT_MIN (-2147483648):
+  -n would be 2147483648 which OVERFLOWS int
+  With long long, -n is stored safely
+
+That is why the parameter n is long long, not int.
+```
+
+---
+
+## Edge Cases
+
+| Case | Input | Expected | What code does |
+|------|-------|----------|----------------|
+| n = 0 | x=5.0, n=0 | 1.0 | base case returns 1 immediately |
+| n = 1 | x=3.0, n=1 | 3.0 | one odd recursion: 1*1*3 |
+| n negative | x=2.0, n=-3 | 0.125 | flip x to 1/x, negate n |
+| x = 1.0 | x=1.0, n=100 | 1.0 | 1*1=1 at every level |
+| x = 0.0 | x=0.0, n=5 | 0.0 | 0*0=0 at every level |
+| n = INT_MIN | x=2.0, n=-2147483648 | tiny | long long prevents overflow |
+
+---
+
+## Complexity Analysis
+
+```
+TIME COMPLEXITY:
+  Each recursive call halves n.
+  n -> n/2 -> n/4 -> ... -> 1 -> 0
+  Depth of recursion = log2(n)
+  Each call does O(1) work (one or two multiplications)
+  Total: O(log n)
+
+SPACE COMPLEXITY:
+  Recursion stack holds one frame per level.
+  Stack depth = log2(n)
+  Total: O(log n)
+
+Compare with naive loop:
+  Time: O(n)   Space: O(1)
+
+For n = 10^9:
+  Naive: 10^9 operations
+  Fast:  log2(10^9) = ~30 operations
+```
+
+---
+
+## Key Lines to Remember
+
+```cpp
+// KEY 1 — negative exponent handled BEFORE recursion
+if (n < 0) {
+    x = 1.0 / x;    // flip base
+    n = -n;          // make exponent positive
+}
+
+// KEY 2 — base case
+if (n == 0) return 1;
+
+// KEY 3 — recurse with HALF the exponent (core of the algorithm)
+double half = helper(num, n / 2);
+
+// KEY 4 — even: square the half result
+if (n % 2 == 0) return half * half;
+
+// KEY 5 — odd: square the half result, multiply once more by num
+else return half * half * num;
+```
+
+---
+
+##### Notes: prepared for teaching — dry runs for n=10 (positive), n=-3 (negative), n=0 and n=1 (edge cases), with full recursion tree traced top to bottom and bottom to top.
 ---
 
 ### 34. Merge Intervals
@@ -4188,3 +4571,983 @@ vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
 **Key Takeaway:** The trick of **not incrementing the index on "take"** is what enables unlimited reuse of a candidate — a subtle but important difference from standard subset/combination problems where you always move forward.
 
 ---
+
+## 36. Find Missing and Repeating Numbers
+
+> **Problem:** In an array of size N containing numbers from 1 to N, one number appears twice (repeating) and one number is missing. Find both.
+> **Three Approaches:** Brute Force → Hashing → Math (each better than the last)
+
+---
+
+## The Problem
+
+```
+Input array of size N = 5, containing numbers that should be [1, 2, 3, 4, 5]
+but one number appears TWICE and one number is MISSING.
+
+Example:
+  arr = [4, 3, 6, 2, 3, 5]   N = 6
+  Expected range: 1 to 6
+  3 appears twice  -> repeating = 3
+  1 is missing     -> missing   = 1
+
+For dry run we use:
+  arr = [3, 1, 2, 5, 3, 4]   N = 6
+  3 appears twice  -> repeating = 3
+  6 is missing     -> missing   = 6
+```
+
+---
+
+## Approach 1 — Brute Force
+
+### Code
+
+```cpp
+vector<int> findMissingRepeatingNumbers(vector<int> &arr, int n) {
+    int repeating = -1, missing = -1;
+
+    for (int i = 1; i <= n; i++) {        // outer: try each number 1..n
+        int count = 0;
+
+        for (int j = 0; j < n; j++) {     // inner: scan whole array
+            if (arr[j] == i) {
+                count++;
+            }
+        }
+
+        if (count > 1) {
+            repeating = i;                 // seen more than once
+        }
+
+        if (count == 0) {
+            missing = i;                   // never seen
+        }
+
+        if (repeating != -1 && missing != -1) {
+            break;                         // both found — stop early
+        }
+    }
+
+    return {repeating, missing};
+}
+// TC: O(n^2)   SC: O(1)
+```
+
+### Intuition
+
+```
+For every number i from 1 to n:
+  Count how many times i appears in arr.
+  count > 1  ->  i is the repeating number
+  count == 0 ->  i is the missing number
+```
+
+---
+
+### Brute Force — Full Dry Run
+
+**Input:** `arr = [3, 1, 2, 5, 3, 4]`,  `n = 6`
+**Expected output:** `repeating = 3`,  `missing = 6`
+
+---
+
+#### Outer loop i = 1
+
+```
+i = 1,  count = 0
+  j=0: arr[0]=3, 3==1? NO
+  j=1: arr[1]=1, 1==1? YES  -> count=1
+  j=2: arr[2]=2, 2==1? NO
+  j=3: arr[3]=5, 5==1? NO
+  j=4: arr[4]=3, 3==1? NO
+  j=5: arr[5]=4, 4==1? NO
+
+count = 1
+  count > 1?  NO  -> repeating stays -1
+  count == 0? NO  -> missing stays -1
+
+repeating=-1, missing=-1  -> continue
+```
+
+#### Outer loop i = 2
+
+```
+i = 2,  count = 0
+  j=0: arr[0]=3, 3==2? NO
+  j=1: arr[1]=1, 1==2? NO
+  j=2: arr[2]=2, 2==2? YES  -> count=1
+  j=3: arr[3]=5, 5==2? NO
+  j=4: arr[4]=3, 3==2? NO
+  j=5: arr[5]=4, 4==2? NO
+
+count = 1
+  count > 1?  NO  -> repeating stays -1
+  count == 0? NO  -> missing stays -1
+
+repeating=-1, missing=-1  -> continue
+```
+
+#### Outer loop i = 3
+
+```
+i = 3,  count = 0
+  j=0: arr[0]=3, 3==3? YES  -> count=1
+  j=1: arr[1]=1, 1==3? NO
+  j=2: arr[2]=2, 2==3? NO
+  j=3: arr[3]=5, 5==3? NO
+  j=4: arr[4]=3, 3==3? YES  -> count=2
+  j=5: arr[5]=4, 4==3? NO
+
+count = 2
+  count > 1?  YES -> repeating = 3
+  count == 0? NO  -> missing stays -1
+
+repeating=3, missing=-1  -> both not found yet, continue
+```
+
+#### Outer loop i = 4
+
+```
+i = 4,  count = 0
+  j=0: arr[0]=3, 3==4? NO
+  j=1: arr[1]=1, 1==4? NO
+  j=2: arr[2]=2, 2==4? NO
+  j=3: arr[3]=5, 5==4? NO
+  j=4: arr[4]=3, 3==4? NO
+  j=5: arr[5]=4, 4==4? YES  -> count=1
+
+count = 1
+  count > 1?  NO
+  count == 0? NO  -> missing stays -1
+
+repeating=3, missing=-1  -> continue
+```
+
+#### Outer loop i = 5
+
+```
+i = 5,  count = 0
+  j=0: arr[0]=3, 3==5? NO
+  j=1: arr[1]=1, 1==5? NO
+  j=2: arr[2]=2, 2==5? NO
+  j=3: arr[3]=5, 5==5? YES  -> count=1
+  j=4: arr[4]=3, 3==5? NO
+  j=5: arr[5]=4, 4==5? NO
+
+count = 1
+  count > 1?  NO
+  count == 0? NO  -> missing stays -1
+
+repeating=3, missing=-1  -> continue
+```
+
+#### Outer loop i = 6
+
+```
+i = 6,  count = 0
+  j=0: arr[0]=3, 3==6? NO
+  j=1: arr[1]=1, 1==6? NO
+  j=2: arr[2]=2, 2==6? NO
+  j=3: arr[3]=5, 5==6? NO
+  j=4: arr[4]=3, 3==6? NO
+  j=5: arr[5]=4, 4==6? NO
+
+count = 0
+  count > 1?  NO
+  count == 0? YES -> missing = 6
+
+repeating=3, missing=6
+  both != -1  -> BREAK early!
+```
+
+#### Brute Force Result
+
+```
+return {repeating, missing} = {3, 6}
+
+Repeating = 3   (appeared 2 times)
+Missing   = 6   (appeared 0 times)
+```
+
+#### Brute Force Iteration Summary Table
+
+| i | j loop counts | count | repeating | missing | action |
+|---|---------------|-------|-----------|---------|--------|
+| 1 | scanned all 6 | 1 | -1 | -1 | continue |
+| 2 | scanned all 6 | 1 | -1 | -1 | continue |
+| 3 | scanned all 6 | 2 | 3 | -1 | repeating found |
+| 4 | scanned all 6 | 1 | 3 | -1 | continue |
+| 5 | scanned all 6 | 1 | 3 | -1 | continue |
+| 6 | scanned all 6 | 0 | 3 | 6 | missing found -> BREAK |
+
+---
+
+## Approach 2 — Hashing
+
+### Code
+
+```cpp
+vector<int> findMissingRepeatingNo(vector<int>& nums) {
+    int n = nums.size();
+    int repeating = -1, missing = -1;
+
+    vector<int> hash(n + 1, 0);      // hash[0..n] all initialised to 0
+
+    // Pass 1: count frequency of each number
+    for (int i = 0; i < n; i++) {
+        hash[nums[i]]++;
+    }
+
+    // Pass 2: scan hash to find repeating and missing
+    for (int i = 1; i <= n; i++) {
+        if (hash[i] > 1) {
+            repeating = i;
+        }
+        else if (hash[i] == 0) {
+            missing = i;
+        }
+
+        if (repeating != -1 && missing != -1) {
+            break;
+        }
+    }
+
+    return {repeating, missing};
+}
+// TC: O(n)   SC: O(n)
+```
+
+### Intuition
+
+```
+Instead of scanning the whole array for each number (O(n^2)),
+count all frequencies in ONE pass, then read the hash table.
+
+hash[i] = 2  ->  i appeared twice  ->  repeating
+hash[i] = 0  ->  i never appeared  ->  missing
+```
+
+---
+
+### Hashing — Full Dry Run
+
+**Input:** `nums = [3, 1, 2, 5, 3, 4]`,  `n = 6`
+
+---
+
+#### Pass 1 — Build frequency hash table
+
+Initial hash: `[0, 0, 0, 0, 0, 0, 0]`  (indices 0 to 6)
+
+```
+i=0: nums[0]=3  -> hash[3]++
+  hash: [0, 0, 0, 1, 0, 0, 0]
+
+i=1: nums[1]=1  -> hash[1]++
+  hash: [0, 1, 0, 1, 0, 0, 0]
+
+i=2: nums[2]=2  -> hash[2]++
+  hash: [0, 1, 1, 1, 0, 0, 0]
+
+i=3: nums[3]=5  -> hash[5]++
+  hash: [0, 1, 1, 1, 0, 1, 0]
+
+i=4: nums[4]=3  -> hash[3]++
+  hash: [0, 1, 1, 2, 0, 1, 0]
+                  ^
+              now 2! -> 3 appeared twice
+
+i=5: nums[5]=4  -> hash[4]++
+  hash: [0, 1, 1, 2, 1, 1, 0]
+
+Final hash table:
+  index:  0   1   2   3   4   5   6
+  value: [0,  1,  1,  2,  1,  1,  0]
+                      ^               ^
+                 hash[3]=2        hash[6]=0
+                 (repeating)      (missing)
+```
+
+---
+
+#### Pass 2 — Scan hash to find answer
+
+```
+i=1: hash[1]=1  -> not >1, not ==0  -> skip
+i=2: hash[2]=1  -> not >1, not ==0  -> skip
+i=3: hash[3]=2  -> 2 > 1  -> repeating = 3
+i=4: hash[4]=1  -> not >1, not ==0  -> skip
+i=5: hash[5]=1  -> not >1, not ==0  -> skip
+i=6: hash[6]=0  -> == 0   -> missing = 6
+
+repeating=3, missing=6  -> both found -> BREAK
+```
+
+#### Hashing Result
+
+```
+return {repeating, missing} = {3, 6}
+
+Repeating = 3
+Missing   = 6
+```
+
+#### Hashing Pass 1 — Step by Step Table
+
+| i | nums[i] | hash[1] | hash[2] | hash[3] | hash[4] | hash[5] | hash[6] |
+|---|---------|---------|---------|---------|---------|---------|---------|
+| start | — | 0 | 0 | 0 | 0 | 0 | 0 |
+| 0 | 3 | 0 | 0 | 1 | 0 | 0 | 0 |
+| 1 | 1 | 1 | 0 | 1 | 0 | 0 | 0 |
+| 2 | 2 | 1 | 1 | 1 | 0 | 0 | 0 |
+| 3 | 5 | 1 | 1 | 1 | 0 | 1 | 0 |
+| 4 | 3 | 1 | 1 | **2** | 0 | 1 | 0 |
+| 5 | 4 | 1 | 1 | 2 | 1 | 1 | 0 |
+
+---
+
+## Approach 3 — Mathematical Formula (Most Optimal)
+
+### Code
+
+```cpp
+vector<int> findMissingRepeatingNo(vector<int>& nums) {
+    long long n = nums.size();
+
+    // Expected sum of 1..n
+    long long SN  = (n * (n + 1)) / 2;
+
+    // Expected sum of squares of 1..n
+    long long S2N = (n * (n + 1) * (2 * n + 1)) / 6;
+
+    // Actual sum and sum of squares from array
+    long long S = 0, S2 = 0;
+    for (int i = 0; i < n; i++) {
+        S  += nums[i];
+        S2 += (long long)nums[i] * nums[i];
+    }
+
+    long long val1 = S  - SN;    // val1 = x - y
+    long long val2 = S2 - S2N;   // val2 = x^2 - y^2
+
+    // x^2 - y^2 = (x+y)(x-y)  =>  x+y = val2 / val1
+    val2 = val2 / val1;           // val2 = x + y
+
+    int x = (val1 + val2) / 2;   // x = repeating
+    int y = x - val1;             // y = missing
+
+    return {x, y};
+}
+// TC: O(n)   SC: O(1)
+```
+
+### Math Derivation
+
+```
+Let:
+  x = repeating number
+  y = missing number
+
+EQUATION 1:
+  Actual sum S   = Expected sum SN + x - y
+  S - SN         = x - y
+  val1           = x - y          ... (1)
+
+EQUATION 2:
+  Actual sum of squares S2  = Expected S2N + x^2 - y^2
+  S2 - S2N                  = x^2 - y^2
+  val2                      = (x+y)(x-y)  [difference of squares]
+  val2 / val1               = x + y       ... (2)
+
+Solving (1) and (2):
+  Add:      (x - y) + (x + y) = val1 + val2
+            2x = val1 + val2
+            x  = (val1 + val2) / 2         <- repeating
+
+  Subtract: x - (x - y) = x - val1
+            y = x - val1                   <- missing
+```
+
+---
+
+### Math Approach — Full Dry Run
+
+**Input:** `nums = [3, 1, 2, 5, 3, 4]`,  `n = 6`
+
+---
+
+#### Step 1 — Compute expected values
+
+```
+n = 6
+
+SN  = n*(n+1)/2         = 6*7/2           = 21
+S2N = n*(n+1)*(2n+1)/6  = 6*7*13/6        = 91
+```
+
+---
+
+#### Step 2 — Compute actual values from array
+
+```
+arr = [3, 1, 2, 5, 3, 4]
+
+i=0: S  += 3    -> S=3    S2 += 3*3=9   -> S2=9
+i=1: S  += 1    -> S=4    S2 += 1*1=1   -> S2=10
+i=2: S  += 2    -> S=6    S2 += 2*2=4   -> S2=14
+i=3: S  += 5    -> S=11   S2 += 5*5=25  -> S2=39
+i=4: S  += 3    -> S=14   S2 += 3*3=9   -> S2=48
+i=5: S  += 4    -> S=18   S2 += 4*4=16  -> S2=64
+
+Final: S = 18,   S2 = 64
+```
+
+---
+
+#### Step 3 — Compute val1 and val2
+
+```
+val1 = S  - SN   = 18 - 21  = -3
+val2 = S2 - S2N  = 64 - 91  = -27
+```
+
+---
+
+#### Step 4 — Solve for x + y
+
+```
+val2 = val2 / val1  =  -27 / -3  =  9
+
+So:
+  val1 = x - y = -3
+  val2 = x + y =  9
+```
+
+---
+
+#### Step 5 — Solve for x (repeating) and y (missing)
+
+```
+x = (val1 + val2) / 2
+  = (-3   +  9  ) / 2
+  = 6 / 2
+  = 3         <- repeating number
+
+y = x - val1
+  = 3 - (-3)
+  = 3 + 3
+  = 6         <- missing number
+```
+
+#### Math Approach Result
+
+```
+return {x, y} = {3, 6}
+
+Repeating = 3
+Missing   = 6
+```
+
+#### Math Approach — Iteration Table (Step 2)
+
+| i | nums[i] | S (running) | nums[i]^2 | S2 (running) |
+|---|---------|-------------|-----------|--------------|
+| start | — | 0 | — | 0 |
+| 0 | 3 | 3 | 9 | 9 |
+| 1 | 1 | 4 | 1 | 10 |
+| 2 | 2 | 6 | 4 | 14 |
+| 3 | 5 | 11 | 25 | 39 |
+| 4 | 3 | 14 | 9 | 48 |
+| 5 | 4 | 18 | 16 | 64 |
+
+#### Math Approach — Formula Chain
+
+```
+S=18   SN=21   ->   val1 = 18-21 = -3   (= x - y)
+S2=64  S2N=91  ->   val2 = 64-91 = -27  (= x^2 - y^2)
+
+val2 / val1  =  -27 / -3  =  9           (= x + y)
+
+x = (-3 + 9) / 2  =  3   [repeating]
+y =  3 - (-3)     =  6   [missing]
+```
+
+---
+
+## All Three Results Verified
+
+```
+Input:  [3, 1, 2, 5, 3, 4]   n=6
+
+Approach 1 (Brute Force):  {3, 6}  correct
+Approach 2 (Hashing):      {3, 6}  correct
+Approach 3 (Math):         {3, 6}  correct
+
+Repeating = 3   (appears at index 0 and index 4)
+Missing   = 6   (never appears in the array)
+```
+
+---
+
+## Comparison of All Three Approaches
+
+| Approach | Time Complexity | Space Complexity | Notes |
+|----------|-----------------|------------------|-------|
+| Brute Force | O(n^2) | O(1) | Two nested loops. Simplest to understand. |
+| Hashing | O(n) | O(n) | Two passes, one hash array of size n+1. |
+| Math (optimal) | O(n) | O(1) | One pass, no extra space. Uses algebra. |
+
+---
+
+## Why `long long` in the Math Approach?
+
+```
+n can be up to 10^5.
+n^2 = 10^10  ->  exceeds int range (max ~2.1 * 10^9).
+
+Sum of squares S2N = n*(n+1)*(2n+1)/6
+For n = 10^5:
+  10^5 * 10^5 * 2*10^5 = 2 * 10^15  -> needs long long (max ~9.2 * 10^18)
+
+That is why:
+  long long n = nums.size();
+  S2 += (long long)nums[i] * nums[i];   <- cast before multiply!
+```
+
+---
+
+## Edge Cases
+
+| Case | What happens |
+|------|-------------|
+| Repeating is 1 | val1 will be negative, math still works correctly |
+| Missing is n | hash[n] = 0 is found at last iteration of pass 2 |
+| Array size = 2 (minimum) | e.g. [2,2] -> repeating=2, missing=1 |
+| Repeating and missing are adjacent | e.g. [1,3,3,4,5] -> rep=3, miss=2; all approaches handle correctly |
+
+---
+
+## Key Formulas to Remember
+
+```
+Sum of 1 to n:            SN  = n*(n+1) / 2
+Sum of squares of 1 to n: S2N = n*(n+1)*(2n+1) / 6
+
+val1 = S  - SN   =  x - y
+val2 = S2 - S2N  =  x^2 - y^2  =  (x+y)(x-y)
+val2 / val1      =  x + y
+
+x (repeating) = (val1 + val2) / 2
+y (missing)   =  x - val1
+```
+
+---
+
+*Notes prepared for teaching — all three approaches with complete dry runs for input [3,1,2,5,3,4], n=6.*
+
+---
+
+### 37. Majority Element II — Elements Appearing More Than n/3 Times
+
+> **Algorithm:** HashMap frequency count
+> **Time Complexity:** O(n) — single pass to build map + one pass over map
+> **Space Complexity:** O(n) — hashmap stores at most n distinct elements
+
+---
+
+## The Problem
+
+Find all elements in the array that appear **more than n/3 times**.
+
+```
+Key observation:
+  At most 2 elements can appear more than n/3 times in any array.
+  Proof: if 3 elements each appear > n/3 times,
+         their total count > n/3 + n/3 + n/3 = n  (impossible)
+
+So the answer vector always has 0, 1, or 2 elements.
+```
+
+---
+
+## The Code
+
+```cpp
+vector<int> majorityElement(vector<int>& nums) {
+    int n = nums.size();
+    vector<int> ans;
+    unordered_map<int, int> map;
+
+    // threshold: element must appear MORE than this many times
+    int majorityElement = n / 3;
+
+    // PASS 1: count frequency of every element
+    for (int i = 0; i < n; i++) {
+        map[nums[i]]++;
+
+        // --- COMMENTED OPTIMISATION (explained at bottom) ---
+        // if (map[nums[i]] == majorityElement + 1) {
+        //     ans.push_back(nums[i]);
+        // }
+        // if (ans.size() == 2)
+        //     break;
+    }
+
+    // PASS 2: collect all elements whose frequency > n/3
+    for (auto it : map) {
+        if (it.second > majorityElement) {
+            ans.push_back(it.first);
+        }
+    }
+
+    return ans;
+}
+
+// Time Complexity: O(n) — one pass to build the map + one pass to iterate it.
+// Space Complexity: O(n) — unordered_map can store up to n elements (ans is O(1)).
+```
+
+---
+
+## Intuition
+
+```
+threshold = n / 3   (integer division)
+
+An element qualifies if:  frequency > threshold
+                      i.e. frequency >= threshold + 1
+                      i.e. frequency >= floor(n/3) + 1
+                      i.e. appears more than n/3 times
+
+Example: n = 8
+  threshold = 8/3 = 2  (integer division)
+  element must appear > 2 times  (i.e. at least 3 times)
+
+Example: n = 9
+  threshold = 9/3 = 3
+  element must appear > 3 times  (i.e. at least 4 times)
+```
+
+---
+
+## Dry Run
+
+### Input
+
+```
+nums = [1, 1, 1, 3, 3, 2, 2, 2]
+n    = 8
+majorityElement (threshold) = 8 / 3 = 2
+
+An element qualifies if it appears > 2 times (i.e. 3 or more times)
+```
+
+---
+
+### PASS 1 — Build Frequency Map
+
+**Initial map:** `{}` (empty)
+
+---
+
+#### i = 0
+
+```
+nums[0] = 1
+map[1]++   ->   map[1] = 1
+
+map: { 1:1 }
+```
+
+#### i = 1
+
+```
+nums[1] = 1
+map[1]++   ->   map[1] = 2
+
+map: { 1:2 }
+```
+
+#### i = 2
+
+```
+nums[2] = 1
+map[1]++   ->   map[1] = 3
+
+map: { 1:3 }
+```
+
+#### i = 3
+
+```
+nums[3] = 3
+map[3]++   ->   map[3] = 1   (new entry)
+
+map: { 1:3, 3:1 }
+```
+
+#### i = 4
+
+```
+nums[4] = 3
+map[3]++   ->   map[3] = 2
+
+map: { 1:3, 3:2 }
+```
+
+#### i = 5
+
+```
+nums[5] = 2
+map[2]++   ->   map[2] = 1   (new entry)
+
+map: { 1:3, 3:2, 2:1 }
+```
+
+#### i = 6
+
+```
+nums[6] = 2
+map[2]++   ->   map[2] = 2
+
+map: { 1:3, 3:2, 2:2 }
+```
+
+#### i = 7
+
+```
+nums[7] = 2
+map[2]++   ->   map[2] = 3
+
+map: { 1:3, 3:2, 2:3 }
+```
+
+---
+
+### Pass 1 — Step by Step Table
+
+| i | nums[i] | map[1] | map[2] | map[3] |
+|---|---------|--------|--------|--------|
+| start | — | 0 | 0 | 0 |
+| 0 | 1 | **1** | 0 | 0 |
+| 1 | 1 | **2** | 0 | 0 |
+| 2 | 1 | **3** | 0 | 0 |
+| 3 | 3 | 3 | 0 | **1** |
+| 4 | 3 | 3 | 0 | **2** |
+| 5 | 2 | 3 | **1** | 2 |
+| 6 | 2 | 3 | **2** | 2 |
+| 7 | 2 | 3 | **3** | 2 |
+
+**Final map:** `{ 1:3, 2:3, 3:2 }`
+
+---
+
+### PASS 2 — Find Elements Above Threshold
+
+```
+threshold = majorityElement = 2
+Condition: it.second > 2   (i.e. frequency >= 3)
+
+Iterate over map entries:
+
+  entry {1, 3}:  3 > 2  ->  TRUE   ->  ans.push_back(1)
+                 ans = [1]
+
+  entry {2, 3}:  3 > 2  ->  TRUE   ->  ans.push_back(2)
+                 ans = [1, 2]
+
+  entry {3, 2}:  2 > 2  ->  FALSE  ->  skip
+```
+
+---
+
+### Pass 2 — Decision Table
+
+| Element | Frequency | Frequency > threshold(2)? | Added to ans? |
+|---------|-----------|---------------------------|---------------|
+| 1 | 3 | 3 > 2 → YES | YES |
+| 2 | 3 | 3 > 2 → YES | YES |
+| 3 | 2 | 2 > 2 → NO  | NO  |
+
+---
+
+### Final Answer
+
+```
+return ans = [1, 2]
+
+Verification:
+  nums = [1, 1, 1, 3, 3, 2, 2, 2],   n = 8
+  n/3  = 2.66...
+
+  1 appears 3 times  ->  3 > 2.66  ->  YES, majority element
+  2 appears 3 times  ->  3 > 2.66  ->  YES, majority element
+  3 appears 2 times  ->  2 > 2.66  ->  NO
+
+Output: [1, 2]   CORRECT
+```
+
+---
+
+## The Commented-Out Optimisation Explained
+
+```cpp
+// if (map[nums[i]] == majorityElement + 1) {
+//     ans.push_back(nums[i]);
+// }
+// if (ans.size() == 2)
+//     break;
+```
+
+### What it does
+
+```
+Instead of waiting for Pass 2, push an element into ans
+the EXACT moment its count crosses the threshold.
+
+majorityElement + 1  is the first count that qualifies.
+  threshold     = 2   (for n=8)
+  threshold + 1 = 3   <- add to ans the moment count hits 3
+
+This avoids re-scanning the whole map in Pass 2.
+
+Once ans has 2 elements we know we have found both majority elements
+(at most 2 can exist), so we BREAK out of Pass 1 early.
+```
+
+### Dry run with optimisation ON (same input)
+
+```
+i=0: nums[0]=1, map[1]=1,  1 == 3? NO
+i=1: nums[1]=1, map[1]=2,  2 == 3? NO
+i=2: nums[2]=1, map[1]=3,  3 == 3? YES -> ans=[1]
+     ans.size()==2? NO, continue
+i=3: nums[3]=3, map[3]=1,  1 == 3? NO
+i=4: nums[4]=3, map[3]=2,  2 == 3? NO
+i=5: nums[5]=2, map[2]=1,  1 == 3? NO
+i=6: nums[6]=2, map[2]=2,  2 == 3? NO
+i=7: nums[7]=2, map[2]=3,  3 == 3? YES -> ans=[1, 2]
+     ans.size()==2? YES -> BREAK
+
+No Pass 2 needed. Return [1, 2] directly.
+```
+
+### Why is it commented out?
+
+```
+The optimisation works ONLY IF both majority elements
+cross threshold + 1 during Pass 1.
+
+If the input has only ONE majority element (or zero),
+ans.size() never reaches 2 inside the loop,
+and we still need Pass 2 to collect that one element.
+
+The commented version works correctly only when exactly 2
+majority elements exist and both appear by the end of the loop.
+The current (uncommented) version handles ALL cases safely.
+```
+
+---
+
+## More Examples
+
+### Example 2: Only one majority element
+
+```
+nums = [1, 2, 1, 1, 3],   n = 5
+threshold = 5/3 = 1
+
+map after Pass 1: { 1:3, 2:1, 3:1 }
+
+Pass 2:
+  1: 3 > 1  -> YES  -> ans = [1]
+  2: 1 > 1  -> NO
+  3: 1 > 1  -> NO
+
+Output: [1]
+```
+
+### Example 3: No majority element
+
+```
+nums = [1, 2, 3, 4, 5, 6],   n = 6
+threshold = 6/3 = 2
+
+map after Pass 1: { 1:1, 2:1, 3:1, 4:1, 5:1, 6:1 }
+
+Pass 2:
+  All frequencies = 1.  1 > 2? NO for all.
+
+Output: []
+```
+
+### Example 4: All elements same
+
+```
+nums = [7, 7, 7, 7],   n = 4
+threshold = 4/3 = 1
+
+map after Pass 1: { 7:4 }
+
+Pass 2:
+  7: 4 > 1  -> YES  -> ans = [7]
+
+Output: [7]
+```
+
+---
+
+## Complexity Analysis
+
+```
+PASS 1 — build frequency map
+  Visit each of n elements once  ->  O(n)
+  unordered_map insertion/lookup  ->  O(1) average per operation
+  Total: O(n)
+
+PASS 2 — scan map entries
+  Map has at most n distinct keys  ->  O(n) worst case
+  In practice, far fewer distinct elements
+  Total: O(n)
+
+Overall Time:  O(n) + O(n) = O(n)
+
+Space:
+  map stores at most n distinct elements  ->  O(n)
+  ans stores at most 2 elements           ->  O(1)
+  Overall Space: O(n)
+```
+
+---
+
+## Key Points to Remember
+
+```
+1. THRESHOLD formula:
+      majorityElement = n / 3    (integer division)
+      qualify if:  frequency > majorityElement
+
+2. AT MOST 2 elements can qualify (mathematically proven).
+      3 elements each > n/3  =>  total > n  (impossible)
+
+3. unordered_map:
+      map[key]++  creates the key with value 0 then increments to 1
+      if the key does not exist yet.
+      So no need to check if key exists before incrementing.
+
+4. Iterating map with auto:
+      for (auto it : map)
+        it.first  = key   (the number)
+        it.second = value (its frequency)
+
+5. Integer division matters:
+      n=8:  8/3 = 2  (not 2.66)  threshold is 2
+      n=9:  9/3 = 3               threshold is 3
+      This is correct because "more than n/3" with n=9
+      means frequency > 3, which is what integer division gives.
+```
+
+---
+
+*Notes prepared for teaching — full dry run for [1,1,1,3,3,2,2,2] traced iteration by iteration for both passes, with explanation of the commented optimisation.*
