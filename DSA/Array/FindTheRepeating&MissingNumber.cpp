@@ -34,6 +34,7 @@ vector<int> findMissingRepeatingNumbers(vector<int> &arr, int n) {
 
 
 // Optimal Approach using Hashing
+
 vector<int> findMissingRepeatingNo(vector<int>& nums) {
     int n = nums.size();
     int repeating = -1, missing = -1;
@@ -68,6 +69,7 @@ vector<int> findMissingRepeatingNo(vector<int>& nums) {
 
 
 // Optimal Approach using Mathematical Formulas
+
 vector<int> findMissingRepeatingNo(vector<int>& nums) {
     long long n = nums.size();
 
