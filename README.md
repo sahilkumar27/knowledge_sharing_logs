@@ -5551,3 +5551,629 @@ Space:
 ---
 
 *Notes prepared for teaching — full dry run for [1,1,1,3,3,2,2,2] traced iteration by iteration for both passes, with explanation of the commented optimisation.*
+
+---
+# Combination Sum II — Unique Combinations Without Reuse
+
+> **Algorithm:** Backtracking with duplicate skipping
+> **Time Complexity:** O(2^n) — each element is either taken or skipped
+> **Space Complexity:** O(n) — recursion depth + current combination storage
+
+---
+
+## The Problem
+
+Given a collection of candidates (may contain **duplicates**) and a target,
+find all **unique** combinations that sum to target.
+Each number may only be used **once**.
+
+```
+Rules:
+  1. Each candidate can be used ONCE only
+  2. No duplicate combinations in the answer
+  3. All numbers are positive
+```
+
+---
+
+## The Code
+
+```cpp
+// Example of why target < 0 check matters:
+// candidates = {100, 2}, target = 1
+// target - 100 = 1 - 100 = -99 < 0  ->  return immediately
+
+void helper(vector<int>& candidates, int target,
+            vector<int>& current, int ind,
+            vector<vector<int>>& ans) {
+
+    // overshot — this path is invalid
+    if (target < 0) {
+        return;
+    }
+
+    // exact match — store this combination
+    if (target == 0) {
+        ans.push_back(current);
+        return;
+    }
+
+    int n = candidates.size();
+
+    for (int i = ind; i < n; i++) {
+
+        // DUPLICATE SKIP: if current element == previous element
+        // AND we are not at the start index of this call (i > ind),
+        // skip to avoid generating the same combination again
+        if (i > ind && candidates[i] == candidates[i - 1]) {
+            continue;
+        }
+
+        current.push_back(candidates[i]);               // TAKE this element
+        helper(candidates, target - candidates[i],       // recurse with reduced target
+               current, i + 1, ans);                    // i+1: cannot reuse same index
+        current.pop_back();                              // NOT TAKE — backtrack
+    }
+}
+
+
+vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
+    vector<vector<int>> ans;
+
+    sort(begin(candidates), end(candidates));  // MUST sort for duplicate skip to work
+
+    vector<int> current;
+    helper(candidates, target, current, 0, ans);
+
+    return ans;
+}
+```
+
+---
+
+## Why Sorting is Mandatory
+
+```
+Without sort, duplicates are not adjacent, so the skip condition
+candidates[i] == candidates[i-1] cannot catch them reliably.
+
+candidates = [10, 1, 2, 7, 6, 1, 5]   target = 8
+
+After sort:  [ 1,  1,  2,  5,  6,  7, 10]
+               ^   ^
+          duplicates now adjacent -> easy to skip
+```
+
+---
+
+## The Duplicate Skip — Deep Explanation
+
+```cpp
+if (i > ind && candidates[i] == candidates[i - 1]) continue;
+```
+
+```
+This condition has TWO parts — BOTH must be true to skip:
+
+Part 1:  i > ind
+  "We are NOT at the first position in the current loop."
+  If i == ind, we must try this element (it's the first choice at this level).
+  The duplicate skip only applies when we are choosing the 2nd, 3rd, ... element
+  at the same recursion level.
+
+Part 2:  candidates[i] == candidates[i-1]
+  "Current element equals the previous element."
+  Since array is sorted, duplicates are adjacent.
+
+WHY we need both conditions together:
+  candidates = [1, 1, 2, 5],  target = 3
+
+  Call: helper(target=3, ind=0)
+    i=0: candidates[0]=1  ->  i > ind? 0 > 0? NO  ->  TAKE it  (first 1)
+    i=1: candidates[1]=1  ->  i > ind? 1 > 0? YES
+                              candidates[1]==candidates[0]? 1==1? YES
+                              -> SKIP  (would duplicate first 1's combinations)
+    i=2: candidates[2]=2  ->  no skip, try
+
+  But inside the call from i=0 (first 1 taken):
+    helper(target=2, ind=1)
+      i=1: candidates[1]=1  ->  i > ind? 1 > 1? NO  ->  TAKE (second 1)
+      ...
+  This correctly generates [1,1,1] attempts while avoiding duplicates.
+```
+
+---
+
+## Full Dry Run
+
+### Input
+
+```
+candidates = [10, 1, 2, 7, 6, 1, 5]
+target     = 8
+```
+
+### Step 1 — Sort
+
+```
+Before sort: [10,  1,  2,  7,  6,  1,  5]
+After sort:  [ 1,  1,  2,  5,  6,  7, 10]
+indices:       0   1   2   3   4   5   6
+```
+
+### Expected output
+
+```
+[1,1,6]   ->  1+1+6 = 8
+[1,2,5]   ->  1+2+5 = 8
+[1,7]     ->  1+7   = 8
+[2,6]     ->  2+6   = 8
+```
+
+---
+
+### Recursion Trace
+
+**Notation:**
+```
+helper(target, ind, current)
+TAKE   = push element, recurse with i+1
+SKIP   = duplicate skip via continue
+BT     = pop_back (backtrack)
+STORE  = target==0, push to ans
+PRUNE  = target<0, return
+```
+
+---
+
+```
+candidates = [1, 1, 2, 5, 6, 7, 10]
+              0  1  2  3  4  5   6
+```
+
+---
+
+#### helper(target=8, ind=0, current=[])
+
+```
+i=0: candidates[0]=1
+     i>ind? 0>0? NO -> no skip
+     current=[1], call helper(target=7, ind=1, current=[1])
+```
+
+---
+
+##### helper(target=7, ind=1, current=[1])
+
+```
+  i=1: candidates[1]=1
+       i>ind? 1>1? NO -> no skip
+       current=[1,1], call helper(target=6, ind=2, current=[1,1])
+```
+
+###### helper(target=6, ind=2, current=[1,1])
+
+```
+    i=2: candidates[2]=2
+         i>ind? 2>2? NO -> no skip
+         current=[1,1,2], call helper(target=4, ind=3, current=[1,1,2])
+```
+
+**helper(target=4, ind=3, current=[1,1,2])**
+
+```
+      i=3: candidates[3]=5
+           target-5 = 4-5 = -1
+           current=[1,1,2,5], call helper(target=-1 ...) -> PRUNE (target<0)
+           BT: current=[1,1,2]
+
+      i=4: candidates[4]=6
+           target-6 = 4-6 = -2
+           current=[1,1,2,6], call helper(target=-2 ...) -> PRUNE
+           BT: current=[1,1,2]
+
+      i=5,6: similarly all overshoot -> PRUNE each time
+
+      return (no match found)
+```
+
+```
+         BT: current=[1,1]
+
+    i=3: candidates[3]=5
+         current=[1,1,5], call helper(target=1, ind=4, current=[1,1,5])
+```
+
+**helper(target=1, ind=4, current=[1,1,5])**
+
+```
+      i=4: candidates[4]=6
+           6 > 1  -> PRUNE
+      i=5: 7 > 1  -> PRUNE
+      i=6: 10 > 1 -> PRUNE
+      return (no match)
+```
+
+```
+         BT: current=[1,1]
+
+    i=4: candidates[4]=6
+         current=[1,1,6], call helper(target=0, ind=5, current=[1,1,6])
+```
+
+**helper(target=0, ind=5, current=[1,1,6])**
+
+```
+      target==0  ->  STORE  -> ans = [[1,1,6]]
+      return
+```
+
+```
+         BT: current=[1,1]
+
+    i=5: candidates[5]=7
+         current=[1,1,7], call helper(target=-1 ...) -> PRUNE
+         BT: current=[1,1]
+
+    i=6: candidates[6]=10
+         current=[1,1,10], call helper(target=-4 ...) -> PRUNE
+         BT: current=[1,1]
+
+    return
+```
+
+```
+  BT: current=[1]
+
+  i=2: candidates[2]=2
+       current=[1,2], call helper(target=5, ind=3, current=[1,2])
+```
+
+###### helper(target=5, ind=3, current=[1,2])
+
+```
+    i=3: candidates[3]=5
+         current=[1,2,5], call helper(target=0, ind=4, current=[1,2,5])
+```
+
+**helper(target=0, ind=4, current=[1,2,5])**
+
+```
+      target==0  ->  STORE  -> ans = [[1,1,6],[1,2,5]]
+      return
+```
+
+```
+         BT: current=[1,2]
+
+    i=4: candidates[4]=6
+         target-6 = 5-6 = -1 -> PRUNE
+         BT: current=[1,2]
+
+    i=5,6: similarly PRUNE
+
+    return
+```
+
+```
+  BT: current=[1]
+
+  i=3: candidates[3]=5
+       current=[1,5], call helper(target=2, ind=4, current=[1,5])
+```
+
+###### helper(target=2, ind=4, current=[1,5])
+
+```
+    i=4: candidates[4]=6
+         6 > 2 -> PRUNE
+    i=5,6: PRUNE
+    return (no match)
+```
+
+```
+  BT: current=[1]
+
+  i=4: candidates[4]=6
+       current=[1,6], call helper(target=1, ind=5, current=[1,6])
+```
+
+###### helper(target=1, ind=5, current=[1,6])
+
+```
+    i=5: candidates[5]=7
+         7 > 1 -> PRUNE
+    i=6: PRUNE
+    return
+```
+
+```
+  BT: current=[1]
+
+  i=5: candidates[5]=7
+       current=[1,7], call helper(target=0, ind=6, current=[1,7])
+```
+
+**helper(target=0, ind=6, current=[1,7])**
+
+```
+      target==0  ->  STORE  -> ans = [[1,1,6],[1,2,5],[1,7]]
+      return
+```
+
+```
+  BT: current=[1]
+
+  i=6: candidates[6]=10
+       target-10 = 7-10 = -3 -> PRUNE
+       BT: current=[1]
+
+  return
+```
+
+---
+
+```
+Back in helper(target=8, ind=0):
+BT: current=[]
+
+i=1: candidates[1]=1
+     i>ind? 1>0? YES
+     candidates[1]==candidates[0]? 1==1? YES
+     -> DUPLICATE SKIP (continue)
+     (skipping prevents regenerating [1,1,6], [1,2,5], [1,7] again
+      starting from the second 1)
+```
+
+---
+
+```
+i=2: candidates[2]=2
+     current=[2], call helper(target=6, ind=3, current=[2])
+```
+
+##### helper(target=6, ind=3, current=[2])
+
+```
+  i=3: candidates[3]=5
+       current=[2,5], call helper(target=1, ind=4, current=[2,5])
+```
+
+**helper(target=1, ind=4, current=[2,5])**
+
+```
+    i=4: 6 > 1 -> PRUNE
+    i=5: 7 > 1 -> PRUNE
+    i=6: 10 > 1 -> PRUNE
+    return
+```
+
+```
+  BT: current=[2]
+
+  i=4: candidates[4]=6
+       current=[2,6], call helper(target=0, ind=5, current=[2,6])
+```
+
+**helper(target=0, ind=5, current=[2,6])**
+
+```
+      target==0  ->  STORE  -> ans = [[1,1,6],[1,2,5],[1,7],[2,6]]
+      return
+```
+
+```
+  BT: current=[2]
+
+  i=5: candidates[5]=7
+       target-7 = 6-7 = -1 -> PRUNE
+  i=6: PRUNE
+
+  return
+```
+
+---
+
+```
+Back in helper(target=8, ind=0):
+BT: current=[]
+
+i=3: candidates[3]=5
+     current=[5], call helper(target=3, ind=4, current=[5])
+```
+
+##### helper(target=3, ind=4, current=[5])
+
+```
+  i=4: candidates[4]=6
+       6 > 3 -> PRUNE
+  i=5,6: PRUNE
+  return (no match)
+```
+
+```
+BT: current=[]
+
+i=4: candidates[4]=6
+     current=[6], call helper(target=2, ind=5, current=[6])
+```
+
+##### helper(target=2, ind=5, current=[6])
+
+```
+  i=5: candidates[5]=7
+       7 > 2 -> PRUNE
+  i=6: PRUNE
+  return
+```
+
+```
+BT: current=[]
+
+i=5: candidates[5]=7
+     current=[7], call helper(target=1, ind=6, current=[7])
+```
+
+##### helper(target=1, ind=6, current=[7])
+
+```
+  i=6: candidates[6]=10
+       10 > 1 -> PRUNE
+  return
+```
+
+```
+BT: current=[]
+
+i=6: candidates[6]=10
+     current=[10], call helper(target=-2 ...) -> PRUNE
+BT: current=[]
+
+Loop ends. Return.
+```
+
+---
+
+## Final Answer
+
+```
+ans = [[1,1,6], [1,2,5], [1,7], [2,6]]
+
+Verification:
+  [1,1,6]  ->  1+1+6 = 8  CORRECT
+  [1,2,5]  ->  1+2+5 = 8  CORRECT
+  [1,7]    ->  1+7   = 8  CORRECT
+  [2,6]    ->  2+6   = 8  CORRECT
+  No duplicates, no reused indices.
+```
+
+---
+
+## Dry Run Summary — All STORE Events
+
+| Combination stored | target when stored | ans after store |
+|--------------------|--------------------|-----------------|
+| [1,1,6] | 0 | [[1,1,6]] |
+| [1,2,5] | 0 | [[1,1,6],[1,2,5]] |
+| [1,7] | 0 | [[1,1,6],[1,2,5],[1,7]] |
+| [2,6] | 0 | [[1,1,6],[1,2,5],[1,7],[2,6]] |
+
+---
+
+## Dry Run Summary — All DUPLICATE SKIP Events
+
+| At level | i | ind | candidates[i] | candidates[i-1] | Action |
+|----------|---|-----|---------------|-----------------|--------|
+| helper(8,0) | 1 | 0 | 1 | 1 | SKIP (prevents duplicate starting with 2nd '1') |
+
+---
+
+## Recursion Tree (Condensed)
+######  candidates = [10, 1, 2, 7, 6, 1, 5]   target = 8
+
+######  After sort:  [ 1,  1,  2,  5,  6,  7, 10]
+
+```
+helper(8, ind=0, [])
+├── TAKE 1 -> helper(7, ind=1, [1])
+│   ├── TAKE 1 -> helper(6, ind=2, [1,1])
+│   │   ├── TAKE 2 -> helper(4, ind=3, [1,1,2]) -> all overshoot -> return
+│   │   ├── TAKE 5 -> helper(1, ind=4, [1,1,5]) -> all overshoot -> return
+│   │   ├── TAKE 6 -> helper(0, ind=5, [1,1,6]) -> STORE *** [1,1,6]
+│   │   ├── TAKE 7 -> helper(-1 ...)             -> PRUNE
+│   │   └── TAKE 10-> helper(-4 ...)             -> PRUNE
+│   ├── TAKE 2 -> helper(5, ind=3, [1,2])
+│   │   ├── TAKE 5 -> helper(0, ind=4, [1,2,5])  -> STORE *** [1,2,5]
+│   │   ├── TAKE 6 -> helper(-1 ...)              -> PRUNE
+│   │   └── ...
+│   ├── TAKE 5 -> helper(2, ind=4, [1,5])  -> all overshoot -> return
+│   ├── TAKE 6 -> helper(1, ind=5, [1,6])  -> all overshoot -> return
+│   ├── TAKE 7 -> helper(0, ind=6, [1,7])  -> STORE *** [1,7]
+│   └── TAKE 10-> helper(-3 ...)           -> PRUNE
+│
+├── SKIP 1 (i=1, ind=0, duplicate of candidates[0]) ***
+│
+├── TAKE 2 -> helper(6, ind=3, [2])
+│   ├── TAKE 5 -> helper(1, ind=4, [2,5])  -> all overshoot -> return
+│   ├── TAKE 6 -> helper(0, ind=5, [2,6])  -> STORE *** [2,6]
+│   ├── TAKE 7 -> helper(-1 ...)            -> PRUNE
+│   └── TAKE 10-> helper(-4 ...)            -> PRUNE
+│
+├── TAKE 5 -> helper(3, ind=4, [5])   -> all overshoot -> return
+├── TAKE 6 -> helper(2, ind=5, [6])   -> all overshoot -> return
+├── TAKE 7 -> helper(1, ind=6, [7])   -> all overshoot -> return
+└── TAKE 10-> helper(-2 ...)          -> PRUNE
+```
+
+---
+
+## Comparison With Combination Sum I
+
+| Property | Combination Sum I | Combination Sum II |
+|----------|-------------------|--------------------|
+| Reuse element | YES (unlimited times) | NO (each used once) |
+| Duplicates in input | No | Yes |
+| Recurse with | same index `i` | next index `i+1` |
+| Duplicate skip needed | No | Yes (`i > ind && arr[i]==arr[i-1]`) |
+| Sort needed | Not required | MANDATORY |
+
+---
+
+## Edge Cases
+
+| Input | Output | Reason |
+|-------|--------|--------|
+| candidates=[1,1,1], target=2 | [[1,1]] | two 1s combine, third 1 skipped as duplicate |
+| candidates=[2], target=1 | [] | 2 > 1, immediately pruned |
+| candidates=[1,2,3], target=6 | [[1,2,3]] | only one combination possible |
+| candidates=[100,2], target=1 | [] | 100 > 1 pruned, 2 > 1 pruned |
+
+---
+
+## Key Lines to Remember
+
+```cpp
+// KEY 1 — sort first (duplicates must be adjacent)
+sort(begin(candidates), end(candidates));
+
+// KEY 2 — base cases (order matters: check < 0 first)
+if (target < 0) return;         // overshot
+if (target == 0) {              // exact match
+    ans.push_back(current);
+    return;
+}
+
+// KEY 3 — loop starts from ind (not 0) to avoid reusing previous elements
+for (int i = ind; i < n; i++)
+
+// KEY 4 — duplicate skip (both conditions required)
+if (i > ind && candidates[i] == candidates[i-1]) continue;
+
+// KEY 5 — recurse with i+1 (not i) — each element used at most once
+helper(candidates, target - candidates[i], current, i+1, ans);
+
+// KEY 6 — backtrack (undo the TAKE)
+current.pop_back();
+```
+
+---
+
+## Complexity Analysis
+
+```
+TIME COMPLEXITY: O(2^n * n)
+  Each element has 2 choices: TAKE or SKIP
+  Total subsets explored: O(2^n)
+  Copying a valid combination to ans: O(n)
+  Total: O(2^n * n)
+
+SPACE COMPLEXITY: O(n)
+  Recursion stack depth: at most n levels (one element taken per level)
+  current vector: at most n elements
+  ans: not counted as extra space (it is the output)
+  Total extra space: O(n)
+```
+
+---
+
+*Notes prepared for teaching — full recursion trace for candidates=[10,1,2,7,6,1,5] target=8, every TAKE, SKIP, PRUNE, STORE, and BACKTRACK shown explicitly.*
