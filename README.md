@@ -6175,5 +6175,771 @@ SPACE COMPLEXITY: O(n)
 ```
 
 ---
-
 *Notes prepared for teaching — full recursion trace for candidates=[10,1,2,7,6,1,5] target=8, every TAKE, SKIP, PRUNE, STORE, and BACKTRACK shown explicitly.*
+
+---
+
+## Binary Tree Problems
+
+### BT-1. Inorder Traversal
+
+**Problem:** Return the inorder (Left → Root → Right) traversal of a binary tree.
+
+**Approach:** Recursive DFS — traverse left subtree, visit node, traverse right subtree.
+
+**Code:**
+```cpp
+void helper(TreeNode* root, vector<int>& ans) {
+    if (!root) return;
+    helper(root->left, ans);
+    ans.push_back(root->val);
+    helper(root->right, ans);
+}
+
+vector<int> inorderTraversal(TreeNode* root) {
+    vector<int> ans;
+    helper(root, ans);
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$ — recursion stack, where h is tree height
+
+---
+
+### BT-2. Preorder Traversal
+
+**Problem:** Return the preorder (Root → Left → Right) traversal of a binary tree.
+
+**Approach:** Visit the node first, then recurse into left and right subtrees.
+
+**Code:**
+```cpp
+void helper(TreeNode* root, vector<int>& ans) {
+    if (!root) return;
+    ans.push_back(root->val);
+    helper(root->left, ans);
+    helper(root->right, ans);
+}
+
+vector<int> preorderTraversal(TreeNode* root) {
+    vector<int> ans;
+    helper(root, ans);
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-3. Postorder Traversal
+
+**Problem:** Return the postorder (Left → Right → Root) traversal of a binary tree.
+
+**Approach:** Recurse into left and right subtrees first, then visit the node.
+
+**Code:**
+```cpp
+void helper(TreeNode* root, vector<int>& ans) {
+    if (!root) return;
+    helper(root->left, ans);
+    helper(root->right, ans);
+    ans.push_back(root->val);
+}
+
+vector<int> postorderTraversal(TreeNode* root) {
+    vector<int> ans;
+    helper(root, ans);
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-4. Level Order Traversal
+
+**Problem:** Return the level-by-level traversal of a binary tree as a 2D vector.
+
+**Approach:** BFS using a queue. Process all nodes at the current level before moving to the next.
+
+**Code:**
+```cpp
+vector<vector<int>> levelOrder(TreeNode* root) {
+    if (!root) return {};
+    vector<vector<int>> ans;
+    queue<TreeNode*> bfs;
+    bfs.push(root);
+    while (!bfs.empty()) {
+        int n = bfs.size();
+        vector<int> row;
+        for (int i = 0; i < n; i++) {
+            TreeNode* node = bfs.front(); bfs.pop();
+            row.push_back(node->val);
+            if (node->left)  bfs.push(node->left);
+            if (node->right) bfs.push(node->right);
+        }
+        ans.push_back(row);
+    }
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$ — queue holds at most one full level
+
+---
+
+### BT-5. Maximum Depth of Binary Tree
+
+**Problem:** Find the height (maximum depth) of a binary tree.
+
+**Approach:** Recursively compute left and right subtree heights, return the greater one plus 1.
+
+**Code:**
+```cpp
+int helper(TreeNode* root) {
+    if (!root) return 0;
+    int lh = helper(root->left);
+    int rh = helper(root->right);
+    return max(lh, rh) + 1;
+}
+
+int maxDepth(TreeNode* root) {
+    return helper(root);
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-6. Balanced Binary Tree
+
+**Problem:** Determine if a binary tree is height-balanced (left and right subtrees of every node differ in height by at most 1).
+
+**Approach:** Use a modified height function that returns `INT_MAX` as a sentinel value the moment any subtree is found to be unbalanced. This avoids a separate validity check and solves in a single DFS pass.
+
+**Code:**
+```cpp
+int helper(TreeNode* root) {
+    if (!root) return 0;
+    int lh = helper(root->left);
+    int rh = helper(root->right);
+    if (lh == INT_MAX || rh == INT_MAX) return INT_MAX;
+    if (abs(lh - rh) > 1) return INT_MAX;
+    return max(lh, rh) + 1;
+}
+
+bool isBalanced(TreeNode* root) {
+    if (!root) return true;
+    return helper(root) != INT_MAX;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-7. Diameter of Binary Tree
+
+**Problem:** Find the length of the longest path between any two nodes in a binary tree (the path may or may not pass through the root).
+
+**Approach:** For each node, the diameter through it is `left_height + right_height`. Track the global maximum across all nodes during a single DFS height computation.
+
+**Code:**
+```cpp
+int helper(TreeNode* root, int& diameter) {
+    if (!root) return 0;
+    int lh = helper(root->left, diameter);
+    int rh = helper(root->right, diameter);
+    diameter = max(diameter, lh + rh);
+    return max(lh, rh) + 1;
+}
+
+int diameterOfBinaryTree(TreeNode* root) {
+    int diameter = 0;
+    helper(root, diameter);
+    return diameter;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-8. Maximum Path Sum
+
+**Problem:** Find the maximum sum of any path in a binary tree (a path is any sequence of nodes — not necessarily through the root).
+
+**Approach:** At each node, compute the max gain from left and right children (floored at 0 so we never take a negative branch). Update the global max with `left + right + node->val`. Return only one side upward (a path can't branch going up).
+
+**Code:**
+```cpp
+int helper(TreeNode* root, int& maxi) {
+    if (!root) return 0;
+    int left  = max(0, helper(root->left, maxi));
+    int right = max(0, helper(root->right, maxi));
+    maxi = max(maxi, left + right + root->val);
+    return root->val + max(left, right);
+}
+
+int maxPathSum(TreeNode* root) {
+    int maxi = INT_MIN;
+    helper(root, maxi);
+    return maxi;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-9. Left View of Binary Tree
+
+**Problem:** Return the first node visible from the left side at each level.
+
+**Approach:** BFS level-order traversal; capture the first node of each level (`i == 0`).
+
+**Code:**
+```cpp
+vector<int> leftSideView(TreeNode* root) {
+    if (!root) return {};
+    queue<TreeNode*> bfs;
+    vector<int> ans;
+    bfs.push(root);
+    while (!bfs.empty()) {
+        int n = bfs.size();
+        for (int i = 0; i < n; i++) {
+            TreeNode* node = bfs.front(); bfs.pop();
+            if (node->left)  bfs.push(node->left);
+            if (node->right) bfs.push(node->right);
+            if (i == 0) ans.push_back(node->val);
+        }
+    }
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$
+
+---
+
+### BT-10. Right Side View of Binary Tree
+
+**Problem:** Return the last node visible from the right side at each level.
+
+**Approach:** BFS level-order traversal; capture the last node of each level (`i == n-1`).
+
+**Code:**
+```cpp
+vector<int> rightSideView(TreeNode* root) {
+    if (!root) return {};
+    queue<TreeNode*> bfs;
+    vector<int> ans;
+    bfs.push(root);
+    while (!bfs.empty()) {
+        int n = bfs.size();
+        for (int i = 0; i < n; i++) {
+            TreeNode* node = bfs.front(); bfs.pop();
+            if (node->left)  bfs.push(node->left);
+            if (node->right) bfs.push(node->right);
+            if (i == n - 1) ans.push_back(node->val);
+        }
+    }
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$
+
+---
+
+### BT-11. Bottom View of Binary Tree
+
+**Problem:** Return the bottom-most node at each horizontal distance from the root.
+
+**Approach:** BFS with horizontal distance (HD) tracking. Left child gets `HD - 1`, right child gets `HD + 1`. Use a map from HD → value — overwriting on every visit ensures the deepest node wins. Collect results from `minHD` to `maxHD`.
+
+**Code:**
+```cpp
+vector<int> bottomView(Node* root) {
+    if (!root) return {};
+    vector<int> ans;
+    int minHD = 0, maxHD = 0;
+    queue<pair<Node*, int>> bfs;
+    unordered_map<int, int> mp;
+    bfs.push({root, 0});
+    while (!bfs.empty()) {
+        int n = bfs.size();
+        for (int i = 0; i < n; i++) {
+            Node* node = bfs.front().first;
+            int dist   = bfs.front().second;
+            bfs.pop();
+            minHD = min(minHD, dist);
+            maxHD = max(maxHD, dist);
+            mp[dist] = node->data;   // overwrite → deepest node wins
+            if (node->left)  bfs.push({node->left,  dist - 1});
+            if (node->right) bfs.push({node->right, dist + 1});
+        }
+    }
+    for (int i = minHD; i <= maxHD; i++) ans.push_back(mp[i]);
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$
+
+---
+
+### BT-12. Boundary Traversal of Binary Tree
+
+**Problem:** Return all boundary nodes in anti-clockwise order: root → left boundary (top-down, excluding leaves) → all leaves (left-to-right) → right boundary (bottom-up, excluding leaves).
+
+**Approach:** Split into three helpers — `leftBoundary` (iterative, skips leaves), `collectLeaf` (recursive preorder), and `rightBoundary` (iterative, skips leaves, reverse before appending).
+
+**Code:**
+```cpp
+bool isLeaf(Node* root) {
+    return root->left == NULL && root->right == NULL;
+}
+
+void leftBoundary(Node* root, vector<int>& ans) {
+    if (!root) return;
+    while (!isLeaf(root)) {
+        ans.push_back(root->data);
+        root = root->left ? root->left : root->right;
+    }
+}
+
+void rightBoundary(Node* root, vector<int>& ans) {
+    if (!root) return;
+    vector<int> temp;
+    while (!isLeaf(root)) {
+        temp.push_back(root->data);
+        root = root->right ? root->right : root->left;
+    }
+    for (int i = temp.size() - 1; i >= 0; i--) ans.push_back(temp[i]);
+}
+
+void collectLeaf(Node* root, vector<int>& ans) {
+    if (!root) return;
+    if (isLeaf(root)) { ans.push_back(root->data); return; }
+    collectLeaf(root->left, ans);
+    collectLeaf(root->right, ans);
+}
+
+vector<int> boundaryTraversal(Node* root) {
+    vector<int> ans;
+    if (!root) return ans;
+    if (!isLeaf(root)) ans.push_back(root->data);
+    leftBoundary(root->left, ans);
+    collectLeaf(root, ans);
+    rightBoundary(root->right, ans);
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$ — recursion for leaf collection
+
+---
+
+### BT-13. Lowest Common Ancestor (LCA)
+
+**Problem:** Given a binary tree and two nodes `p` and `q`, find their lowest common ancestor.
+
+**Approach:** Recurse the tree. Return immediately if the current node is null, `p`, or `q`. If both left and right recursive calls return non-null, the current node is the LCA. Otherwise propagate the non-null result upward.
+
+**Code:**
+```cpp
+TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+    if (!root) return root;
+    if (root == p || root == q) return root;
+    TreeNode* nodeA = lowestCommonAncestor(root->left,  p, q);
+    TreeNode* nodeB = lowestCommonAncestor(root->right, p, q);
+    if (!nodeA) return nodeB;
+    if (!nodeB) return nodeA;
+    return root;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-14. Maximum Width of Binary Tree
+
+**Problem:** Find the maximum width of a binary tree, where width counts nodes between the leftmost and rightmost nodes at any level (including nulls in between).
+
+**Approach:** BFS with index-based node numbering. For a node at index `i`, its left child is `2*i+1` and right child `2*i+2`. Normalise indices at each level by subtracting the level's minimum to prevent integer overflow. Width = `last - first + 1`.
+
+**Code:**
+```cpp
+int widthOfBinaryTree(TreeNode* root) {
+    queue<pair<TreeNode*, long>> bfs;
+    long ans = 0;
+    bfs.push({root, 0});
+    while (!bfs.empty()) {
+        long minIdx = bfs.front().second;
+        int size = bfs.size();
+        long first = 0, last = 0;
+        for (int i = 0; i < size; i++) {
+            long currId = bfs.front().second - minIdx;  // normalise
+            if (i == 0)      first = currId;
+            if (i == size-1) last  = currId;
+            TreeNode* node = bfs.front().first; bfs.pop();
+            if (node->left)  bfs.push({node->left,  2 * currId + 1});
+            if (node->right) bfs.push({node->right, 2 * currId + 2});
+        }
+        ans = max(ans, last - first + 1);
+    }
+    return ans;
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$
+
+---
+
+### BT-15. Children Sum Property in Binary Tree
+
+**Problem:** Check whether for every internal node, its value equals the sum of its children's values.
+
+**Approach:** Leaf nodes and null nodes satisfy the property trivially. For internal nodes, verify the sum condition, then recurse into both children.
+
+**Code:**
+```cpp
+bool isSumProperty(Node* root) {
+    if (!root) return true;
+    if (root->left == NULL && root->right == NULL) return true;
+    int sum = 0;
+    sum += root->left  ? root->left->data  : 0;
+    sum += root->right ? root->right->data : 0;
+    if (sum != root->data) return false;
+    return isSumProperty(root->left) && isSumProperty(root->right);
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-16. Flatten Binary Tree to Linked List
+
+**Problem:** Flatten a binary tree in-place into a linked list in preorder order (using the `right` pointer; `left` always `NULL`).
+
+**Approach:** For each node with a left subtree, find the rightmost node of the left subtree and attach the current right subtree there. Move the entire left subtree to the right and null out the left. Recurse on `root->right`.
+
+**Code:**
+```cpp
+void flatten(TreeNode* root) {
+    if (!root) return;
+    if (root->left) {
+        TreeNode* temp = root->left;
+        root->left = NULL;
+        TreeNode* curr = temp;
+        while (curr->right) curr = curr->right;
+        curr->right = root->right;
+        root->right = temp;
+    }
+    flatten(root->right);
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-17. Construct Binary Tree from Inorder and Preorder
+
+**Problem:** Build a binary tree given its preorder and inorder traversal arrays.
+
+**Approach:** The first element of preorder is always the root. Look up its position in inorder (via a hash map) to determine left and right subtree ranges. Recurse for both subtrees, incrementing the preorder index on each root creation.
+
+**Code:**
+```cpp
+TreeNode* build(vector<int>& preorder, unordered_map<int,int>& mp,
+                int& preIndex, int start, int end) {
+    if (start > end) return NULL;
+    TreeNode* root = new TreeNode(preorder[preIndex++]);
+    int rootIndex = mp[root->val];
+    root->left  = build(preorder, mp, preIndex, start, rootIndex - 1);
+    root->right = build(preorder, mp, preIndex, rootIndex + 1, end);
+    return root;
+}
+
+TreeNode* buildTree(vector<int>& preorder, vector<int>& inorder) {
+    unordered_map<int,int> mp;
+    for (int i = 0; i < (int)inorder.size(); i++) mp[inorder[i]] = i;
+    int preIndex = 0, start = 0, end = inorder.size() - 1;
+    return build(preorder, mp, preIndex, start, end);
+}
+```
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$ — hash map + recursion stack
+
+---
+
+### BT-18. Construct Binary Tree from Inorder and Postorder
+
+**Problem:** Build a binary tree given its postorder and inorder traversal arrays.
+
+**Approach:** Mirror of preorder construction — the last element of postorder is always the root. Crucially, the **right subtree must be built before the left** because the postorder index decrements from the end (right subtree appears just before the root in postorder).
+
+**Code:**
+```cpp
+TreeNode* build(vector<int>& postorder, unordered_map<int,int>& mp,
+                int& postIndex, int start, int end) {
+    if (start > end) return NULL;
+    TreeNode* root = new TreeNode(postorder[postIndex--]);
+    int rootIndex = mp[root->val];
+    root->right = build(postorder, mp, postIndex, rootIndex + 1, end);
+    root->left  = build(postorder, mp, postIndex, start, rootIndex - 1);
+    return root;
+}
+
+TreeNode* buildTree(vector<int>& inorder, vector<int>& postorder) {
+    unordered_map<int,int> mp;
+    for (int i = 0; i < (int)inorder.size(); i++) mp[inorder[i]] = i;
+    int postIndex = postorder.size() - 1, start = 0, end = inorder.size() - 1;
+    return build(postorder, mp, postIndex, start, end);
+}
+```
+
+> **Key insight:** Right subtree is built before left because postorder is read right-to-left (root is at the end, right subtree comes just before it).
+
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$
+
+---
+
+### BT-19. Same Tree
+
+**Problem:** Given the roots of two binary trees `p` and `q`, check if they are structurally identical with the same node values.
+
+**Approach:** Recursive comparison — both null means equal; one null means not equal; values differ means not equal. Recurse on both left and right subtrees simultaneously.
+
+**Code:**
+```cpp
+bool isSameTree(TreeNode* p, TreeNode* q) {
+    if (!p && !q) return true;
+    if (!p || !q) return false;
+    if (p->val != q->val) return false;
+    return isSameTree(p->left, q->left) && isSameTree(p->right, q->right);
+}
+```
+**Complexity:**
+- Time: $O(n)$ — visits every node once
+- Space: $O(h)$ — recursion stack
+
+---
+
+### BT-20. Symmetric Tree
+
+**Problem:** Check if a binary tree is a mirror of itself (symmetric around its centre).
+
+**Approach:** A tree is symmetric if its left and right subtrees are mirrors of each other. Two subtrees are mirrors when their roots match, the left's left child mirrors the right's right child, and the left's right child mirrors the right's left child.
+
+**Code:**
+```cpp
+bool helper(TreeNode* p1, TreeNode* p2) {
+    if (!p1 && !p2) return true;
+    if (!p1 || !p2) return false;
+    if (p1->val != p2->val) return false;
+    return helper(p1->left, p2->right) && helper(p1->right, p2->left);
+}
+
+bool isSymmetric(TreeNode* root) {
+    if (!root->left && !root->right) return true;
+    return helper(root->left, root->right);
+}
+```
+
+> **Key insight:** Mirror check crosses sides — left child of one is compared with right child of the other, not the same side.
+
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(h)$
+
+---
+
+### BT-21. Root to Leaf Paths
+
+**Problem:** Return all root-to-leaf paths in a binary tree as strings in the format `"1->2->5"`.
+
+**Approach:** DFS while building a string. At each internal node, append `val + "->"`. At a leaf, append just `val` and push to the answer. Passing `temp` by value provides automatic backtracking.
+
+**Code:**
+```cpp
+void helper(TreeNode* root, string temp, vector<string>& ans) {
+    if (!root) return;
+    if (!root->left && !root->right) {
+        temp += to_string(root->val);
+        ans.push_back(temp);
+        return;
+    }
+    temp += to_string(root->val) + "->";
+    helper(root->left,  temp, ans);
+    helper(root->right, temp, ans);
+}
+
+vector<string> binaryTreePaths(TreeNode* root) {
+    string temp = "";
+    vector<string> ans;
+    helper(root, temp, ans);
+    return ans;
+}
+```
+
+> **Note:** `temp` is passed by value (not reference), so each recursive call gets its own copy — no explicit backtracking needed.
+
+**Complexity:**
+- Time: $O(n \cdot h)$ — string copy at each node costs O(h)
+- Space: $O(h)$ — recursion stack depth
+
+---
+
+### BT-22. Top View of Binary Tree
+
+**Problem:** Return the nodes visible when looking at the tree from the top, ordered from left to right.
+
+**Approach:** BFS with horizontal distance (HD) tracking. The key difference from bottom view — only the **first** node seen at each HD is kept (use `map.find()` to skip if already set). Collect from `minHD` to `maxHD`.
+
+**Code:**
+```cpp
+vector<int> topView(Node* root) {
+    if (!root) return {};
+    vector<int> ans;
+    int minHD = 0, maxHD = 0;
+    queue<pair<Node*, int>> bfs;
+    unordered_map<int, int> mp;
+    bfs.push({root, 0});
+    while (!bfs.empty()) {
+        int n = bfs.size();
+        for (int i = 0; i < n; i++) {
+            Node* node = bfs.front().first;
+            int dist   = bfs.front().second;
+            bfs.pop();
+            minHD = min(minHD, dist);
+            maxHD = max(maxHD, dist);
+            if (mp.find(dist) == mp.end())   // first-seen wins
+                mp[dist] = node->data;
+            if (node->left)  bfs.push({node->left,  dist - 1});
+            if (node->right) bfs.push({node->right, dist + 1});
+        }
+    }
+    for (int i = minHD; i <= maxHD; i++) ans.push_back(mp[i]);
+    return ans;
+}
+```
+
+| | Top View | Bottom View |
+|---|---|---|
+| Which node wins at each HD | First seen (shallowest) | Last seen (deepest) |
+| Map update rule | Only if key absent | Always overwrite |
+
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$
+
+---
+
+### BT-23. Vertical Order Traversal
+
+**Problem:** Return nodes column by column. Within the same column and level, nodes are sorted by value.
+
+**Approach:** BFS tracking both horizontal distance (HD) and level. Use a nested ordered map: `map<HD, map<level, multiset<val>>>`. The `multiset` handles multiple nodes at the same HD and level by sorting them. After BFS, flatten the map into the answer.
+
+**Code:**
+```cpp
+vector<vector<int>> verticalTraversal(TreeNode* root) {
+    vector<vector<int>> ans;
+    map<int, map<int, multiset<int>>> mp;
+    queue<pair<TreeNode*, pair<int,int>>> bfs;
+    bfs.push({root, {0, 0}});
+    while (!bfs.empty()) {
+        TreeNode* node = bfs.front().first;
+        int hd    = bfs.front().second.first;
+        int level = bfs.front().second.second;
+        bfs.pop();
+        mp[hd][level].insert(node->val);
+        if (node->left)  bfs.push({node->left,  {hd - 1, level + 1}});
+        if (node->right) bfs.push({node->right, {hd + 1, level + 1}});
+    }
+    for (auto& [hd, levels] : mp) {
+        vector<int> col;
+        for (auto& [lvl, vals] : levels)
+            col.insert(col.end(), vals.begin(), vals.end());
+        ans.push_back(col);
+    }
+    return ans;
+}
+```
+
+> **Why `multiset`?** Multiple nodes can share the same HD and level (e.g. in a complete binary tree). A multiset keeps them sorted and handles duplicates.
+
+**Complexity:**
+- Time: $O(n \log n)$ — ordered map + multiset insertions
+- Space: $O(n)$
+
+---
+
+### BT-24. Zigzag Level Order Traversal
+
+**Problem:** Return level-order traversal where odd levels go left-to-right and even levels go right-to-left (or vice versa), alternating each level.
+
+**Approach:** Standard BFS, but use a `rev` flag to decide the placement index within each level's row. When `rev` is true, fill the row from right to left by using index `n-1-i` instead of `i`. Toggle `rev` after each level.
+
+**Code:**
+```cpp
+vector<vector<int>> zigzagLevelOrder(TreeNode* root) {
+    if (!root) return {};
+    vector<vector<int>> ans;
+    queue<TreeNode*> bfs;
+    bfs.push(root);
+    bool rev = false;
+    while (!bfs.empty()) {
+        int n = bfs.size();
+        vector<int> row(n, 0);
+        for (int i = 0; i < n; i++) {
+            TreeNode* node = bfs.front(); bfs.pop();
+            int idx = rev ? n - 1 - i : i;   // place based on direction
+            row[idx] = node->val;
+            if (node->left)  bfs.push(node->left);
+            if (node->right) bfs.push(node->right);
+        }
+        rev = !rev;
+        ans.push_back(row);
+    }
+    return ans;
+}
+```
+
+> **Why pre-allocate `row(n, 0)` and use index tricks instead of reversing?** Avoids an extra O(n) reverse step per level — placement is done correctly in a single pass.
+
+**Complexity:**
+- Time: $O(n)$
+- Space: $O(n)$
+
+---
+
+*Binary Tree section covers traversals (inorder, preorder, postorder, level-order, zigzag, left/right/top/bottom view, vertical order, boundary), structural queries (height, diameter, balanced check, width, LCA, children sum, same tree, symmetric tree), path problems (root-to-leaf paths, max path sum), tree construction from traversal pairs, and in-place transformation (flatten to linked list).*
